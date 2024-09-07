@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Character Creation - UnscriptedAdventures</title>
+    <link href="{{ url_for('static', filename='styles.css') }}" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Cinzel+Decorative:wght@700&display=swap" rel="stylesheet">
+</head>
+<body>
+    {% include 'navbar.html' %}
+    <h1>Character Creation</h1>
+    <div class="container">
+        <form id="characterForm">
+            <label for="characterName">Character Name:</label>
+            <input type="text" id="characterName" name="characterName" required>
+
+            <label for="characterRace">Race:</label>
+            <select id="characterRace" name="characterRace">
+                <option value="Human">Human</option>
+                <option value="Elf">Elf</option>
+                <option value="Dwarf">Dwarf</option>
+                <option value="Halfling">Halfling</option>
+                <option value="Tiefling">Tiefling</option>
+                <option value="Dragonborn">Dragonborn</option>
+                <option value="Gnome">Gnome</option>
+                <option value="Half-Orc">Half-Orc</option>
+                <option value="Half-Elf">Half-Elf</option>
+            </select>
+
+            <label for="characterClass">Class:</label>
+            <select id="characterClass" name="characterClass">
+                <option value="Fighter">Fighter</option>
+                <option value="Wizard">Wizard</option>
+                <option value="Rogue">Rogue</option>
+                <option value="Cleric">Cleric</option>
+                <option value="Paladin">Paladin</option>
+                <option value="Ranger">Ranger</option>
+                <option value="Druid">Druid</option>
+                <option value="Monk">Monk</option>
+                <option value="Warlock">Warlock</option>
+                <option value="Bard">Bard</option>
+            </select>
+
+            <label for="characterBackground">Background:</label>
+            <select id="characterBackground" name="characterBackground">
+                <option value="Acolyte">Acolyte</option>
+                <option value="Criminal">Criminal</option>
+                <option value="Folk Hero">Folk Hero</option>
+                <option value="Noble">Noble</option>
+                <option value="Soldier">Soldier</option>
+                <option value="Sage">Sage</option>
+                <option value="Urchin">Urchin</option>
+                <option value="Entertainer">Entertainer</option>
+                <option value="Guild Artisan">Guild Artisan</option>
+            </select>
+
+            <button type="button" onclick="saveCharacter()">Save Character</button>
+        </form>
+    </div>
+
+    <script>
+        function saveCharacter() {
+            const characterData = {
+                name: document.getElementById('characterName').value,
+                race: document.getElementById('characterRace').value,
+                class: document.getElementById('characterClass').value,
+                background: document.getElementById('characterBackground').value
+            };
+
+            fetch('/save_character', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(characterData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,172 @@
+body {
+    font-family: 'Cinzel', serif;
+    background-color: #f2e6d9;
+    background-image: url('https://www.transparenttextures.com/patterns/old-mathematics.png');
+    color: #4b2e2a;
+    margin: 0;
+    padding: 0;
+    line-height: 1.6;
+}
+
+.navbar {
+    background-color: #7a4a36;
+    padding: 10px;
+    text-align: center;
+}
+
+.navbar a {
+    color: #fff8e7;
+    text-decoration: none;
+    margin: 0 15px;
+    font-size: 18px;
+}
+
+.navbar a:hover {
+    text-decoration: underline;
+}
+
+h1 {
+    font-family: 'Cinzel Decorative', serif;
+    text-align: center;
+    color: #7a4a36;
+    font-size: 3em;
+    margin-bottom: 20px;
+    text-shadow: 2px 2px #d4c5a2;
+}
+
+.container {
+    max-width: 800px;
+    margin: auto;
+    padding: 20px;
+    background-color: rgba(255, 248, 230, 0.9);
+    border: 2px solid #7a4a36;
+    border-radius: 10px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+}
+
+label {
+    font-weight: bold;
+    display: block;
+    margin-bottom: 5px;
+}
+
+select, input[type="text"], input[type="email"], textarea {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border-radius: 5px;
+    border: 2px solid #7a4a36;
+    font-size: 16px;
+    font-family: 'Cinzel', serif;
+    background-color: #fff8e7;
+    color: #4b2e2a;
+    box-sizing: border-box;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    padding-right: 30px;
+    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 5'%3E%3Cpath fill='%234B2E2A' d='M2 0L0 2h4z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px top 50%;
+    background-size: 10px;
+}
+
+.character-sheet {
+    flex: 0 0 300px;
+    padding: 15px;
+    border: 2px solid #7a4a36;
+    background-color: rgba(255, 248, 230, 0.9);
+    border-radius: 10px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+}
+
+.character-sheet h2 {
+    font-size: 24px;
+    color: #4b2e2a;
+    text-align: center;
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+.character-sheet p {
+    margin: 5px 0;
+    font-weight: bold;
+}
+
+button {
+    padding: 10px 20px;
+    font-size: 16px;
+    border: 2px solid #7a4a36;
+    border-radius: 5px;
+    background-color: #7a4a36;
+    color: #fff8e7;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #4b2e2a;
+}
+
+.game-display {
+    width: 100%;
+    max-width: 960px;
+    height: 200px;
+    padding: 15px;
+    border: 2px solid #7a4a36;
+    background-color: rgba(255, 248, 230, 0.9);
+    border-radius: 10px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+    margin-bottom: 20px;
+    overflow-y: auto;
+}
+
+.game-display::-webkit-scrollbar {
+    width: 12px;
+}
+
+.game-display::-webkit-scrollbar-track {
+    background: rgba(255, 248, 230, 0.6);
+    border-radius: 10px;
+}
+
+.game-display::-webkit-scrollbar-thumb {
+    background-color: #7a4a36;
+    border-radius: 10px;
+    border: 2px solid #d4c5a2;
+}
+
+textarea {
+    width: 100%;
+    height: 120px;
+    margin-bottom: 10px;
+    padding: 10px;
+    font-size: 16px;
+    border: 2px solid #7a4a36;
+    border-radius: 5px;
+    background-color: #fff8e7;
+    color: #4b2e2a;
+    resize: none;
+    overflow: auto;
+}
+
+textarea::-webkit-scrollbar {
+    width: 12px;
+}
+
+textarea::-webkit-scrollbar-track {
+    background: rgba(255, 248, 230, 0.6);
+    border-radius: 10px;
+}
+
+textarea::-webkit-scrollbar-thumb {
+    background-color: #7a4a36;
+    border-radius: 10px;
+    border: 2px solid #d4c5a2;
+}
+
+.button-container {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+}
