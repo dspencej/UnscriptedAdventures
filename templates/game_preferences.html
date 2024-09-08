@@ -65,35 +65,36 @@
         </form>
     </div>
 
-    <script>
-        async function submitPreferences() {
-            const preferences = {
-                gameStyle: document.getElementById('gameStyle').value,
-                tone: document.getElementById('tone').value,
-                difficulty: document.getElementById('difficulty').value,
-                theme: document.getElementById('theme').value
-            };
+<script>
+    async function submitPreferences() {
+        const preferences = {
+            gameStyle: document.getElementById('gameStyle').value,
+            tone: document.getElementById('tone').value,
+            difficulty: document.getElementById('difficulty').value,
+            theme: document.getElementById('theme').value
+        };
 
-            const loadingSpinner = document.getElementById('loadingSpinner');
-            loadingSpinner.style.display = 'inline-block'; // Show the loading spinner
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        loadingSpinner.style.display = 'inline-block'; // Show the loading spinner
 
-            try {
-                const response = await fetch('/submit_preferences', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ preferences })
-                });
-                const data = await response.json();
-                alert(data.message);
-                // Optionally redirect or handle the game start here
-            } catch (error) {
-                console.error('Error submitting preferences:', error);
-            } finally {
-                loadingSpinner.style.display = 'none'; // Hide the loading spinner
-            }
+        try {
+            const response = await fetch('/submit_preferences', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ preferences })
+            });
+            const data = await response.json();
+            alert(data.message); // Notify user of success
+        } catch (error) {
+            console.error('Error submitting preferences:', error);
+        } finally {
+            loadingSpinner.style.display = 'none'; // Hide the loading spinner
         }
-    </script>
+    }
+</script>
+
+
 </body>
 </html>
