@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Preferences - UnscriptedAdventures</title>
+    <link href="/static/styles.css" rel="stylesheet">
+    <style>
+        .loading-spinner {
+            display: none; /* Hidden by default */
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3; /* Light grey */
+            border-top: 3px solid #7a4a36; /* Spinner color */
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    {% include 'navbar.html' %}
+    <h1>Choose Your Adventure Style</h1>
+    <div class="container">
+        <form id="preferencesForm">
+            <label for="gameStyle">Preferred Game Style:</label>
+            <select id="gameStyle" name="gameStyle" required>
+                <option value="combat">Combat-Focused</option>
+                <option value="narrative">Narrative-Driven</option>
+                <option value="exploration">Exploration-Based</option>
+                <option value="puzzle">Puzzle-Solving</option>
+            </select>
+
+            <label for="tone">Preferred Tone:</label>
+            <select id="tone" name="tone" required>
+                <option value="lighthearted">Lighthearted</option>
+                <option value="serious">Serious</option>
+                <option value="dark">Dark and Gritty</option>
+                <option value="mysterious">Mysterious</option>
+            </select>
+
+            <label for="difficulty">Difficulty Level:</label>
+            <select id="difficulty" name="difficulty" required>
+                <option value="easy">Easy</option>
+                <option value="medium">Medium</option>
+                <option value="hard">Hard</option>
+                <option value="extreme">Extreme</option>
+            </select>
+
+            <label for="theme">Preferred Theme:</label>
+            <select id="theme" name="theme" required>
+                <option value="fantasy">Fantasy</option>
+                <option value="sci-fi">Science Fiction</option>
+                <option value="post-apocalyptic">Post-Apocalyptic</option>
+                <option value="historical">Historical</option>
+            </select>
+
+            <button type="button" onclick="submitPreferences()">Submit Preferences</button>
+            <div id="loadingSpinner" class="loading-spinner"></div>
+        </form>
+    </div>
+
+    <script>
+        async function submitPreferences() {
+            const preferences = {
+                gameStyle: document.getElementById('gameStyle').value,
+                tone: document.getElementById('tone').value,
+                difficulty: document.getElementById('difficulty').value,
+                theme: document.getElementById('theme').value
+            };
+
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            loadingSpinner.style.display = 'inline-block'; // Show the loading spinner
+
+            try {
+                const response = await fetch('/submit_preferences', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ preferences })
+                });
+                const data = await response.json();
+                alert(data.message);
+                // Optionally redirect or handle the game start here
+            } catch (error) {
+                console.error('Error submitting preferences:', error);
+            } finally {
+                loadingSpinner.style.display = 'none'; // Hide the loading spinner
+            }
+        }
+    </script>
+</body>
+</html>

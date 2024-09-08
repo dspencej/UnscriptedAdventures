@@ -123,6 +123,7 @@
         .button-container {
             display: flex;
             gap: 10px;
+            align-items: center;
             margin-bottom: 10px;
         }
 
@@ -139,9 +140,9 @@
             max-width: calc(100% - 30px); /* Max width within the container with some padding */
             max-height: 150px; /* Max height to prevent overflow */
             resize: none; /* Allow resizing both horizontally and vertically */
-            /* Custom Scrollbar Styling for Textarea */
             overflow: auto;
         }
+
         /* Matching Scrollbar Styling for Textarea */
         textarea::-webkit-scrollbar {
             width: 12px; /* Width of the scrollbar */
@@ -187,6 +188,23 @@
         strong {
             color: #7a4a36;
         }
+
+        /* Loading Spinner */
+        .loading-spinner {
+            border: 4px solid #f3f3f3; /* Light gray */
+            border-top: 4px solid #7a4a36; /* Darker color for the spinner */
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: none; /* Hidden by default */
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Cinzel+Decorative:wght@700&display=swap" rel="stylesheet">
 </head>
@@ -207,8 +225,13 @@
                 <textarea id="userInput" placeholder="Enter your response..."></textarea>
                 <div class="button-container">
                     <button onclick="sendInteraction()">Send</button>
+                    <div id="loadingSpinner" class="loading-spinner"></div>
                     <button onclick="clearGameDisplay()">Clear</button>
+                    <button onclick="saveGame()">Save Game</button>
+                    <button onclick="loadGame()">Load Game</button>
+                    <button onclick="newGame()">New Game</button> <!-- New Game button -->
                 </div>
+
                 <div id="response">
                     <p><strong>DM Action:</strong> <span id="dmAction"></span></p>
                     <p><strong>Feedback Score:</strong> <span id="feedbackScore"></span></p>
@@ -233,39 +256,135 @@
     </div>
 
 <script>
-    function sendInteraction() {
-        const userInput = document.getElementById('userInput').value;
+    let conversationHistory = [];
+    async function sendInteraction() {
+        const userInputBox = document.getElementById('userInput');
+        const userInput = userInputBox.value.trim(); // Trim whitespace from the input
+        const loadingSpinner = document.getElementById('loadingSpinner');
 
-        fetch('/interact', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ user_input: userInput })
-        })
-        .then(response => response.json())
-        .then(data => {
-            // Display DM Action in the game display
+        // Check for empty input
+        if (!userInput) {
+            alert("Please enter a response before sending."); // Alert the user
+            return; // Exit the function early
+        }
+
+        loadingSpinner.style.display = 'inline-block';
+
+        conversationHistory.push({ role: 'user', content: userInput });
+
+        try {
+            const response = await fetch('/interact', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ user_input: userInput }) // Corrected key from conversation to user_input
+            });
+
+            const data = await response.json();
+
+            if (response.status === 400) { // Check for 400 Bad Request
+                alert(data.message); // Show the error message to the user
+                return;
+            }
+
+            conversationHistory.push({ role: 'gm', content: data.gm_response });
+
             const gameDisplay = document.getElementById('gameDisplay');
-            gameDisplay.innerHTML += `<p>${data.dm_action}</p>`;
-            gameDisplay.scrollTop = gameDisplay.scrollHeight; // Scroll to the bottom
+            gameDisplay.innerHTML += `<p><strong>You:</strong> ${userInput}</p>`;
+            gameDisplay.innerHTML += `<p><strong>GM:</strong> ${data.gm_response}</p>`;
+            gameDisplay.scrollTop = gameDisplay.scrollHeight;
 
-            // Update response elements
-            document.getElementById('dmAction').innerText = data.dm_action;
-            document.getElementById('feedbackScore').innerText = data.feedback_score.toFixed(2);
-            document.getElementById('updatedRewards').innerText = JSON.stringify(data.updated_rewards);
+            userInputBox.value = '';
+            userInputBox.setAttribute('placeholder', 'Enter your response...');
 
-            // Clear the user input box
-            document.getElementById('userInput').value = '';
-        })
-        .catch(error => console.error('Error:', error));
+        } catch (error) {
+            console.error('Error:', error);
+        } finally {
+            loadingSpinner.style.display = 'none';
+        }
+    }
+
+    async function saveGame() {
+        try {
+            const response = await fetch('/save_game', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ game_state: { conversation: conversationHistory } })
+            });
+            const data = await response.json();
+            alert(data.message);
+        } catch (error) {
+            console.error('Error saving game:', error);
+        }
+    }
+
+        async function loadGame() {
+        try {
+            const response = await fetch('/load_game', {
+                method: 'GET'
+            });
+            const data = await response.json();
+            if (data.status === "success") {
+                conversationHistory = data.game_state.conversation || [];
+                const gameDisplay = document.getElementById('gameDisplay');
+                gameDisplay.innerHTML = '';
+                conversationHistory.forEach(entry => {
+                    gameDisplay.innerHTML += `<p><strong>${entry.role === 'user' ? 'You' : 'GM'}:</strong> ${entry.content}</p>`;
+                });
+                gameDisplay.scrollTop = gameDisplay.scrollHeight;
+
+                // Ensure the LLM has the updated context
+                await sendContextToLLM(conversationHistory);
+            } else {
+                alert("Failed to load game.");
+            }
+        } catch (error) {
+            console.error('Error loading game:', error);
+        }
+    }
+
+    async function sendContextToLLM(conversationHistory) {
+        try {
+            const llmPrompt = conversationHistory.map(entry => {
+                return entry.role === 'user' ? `Player: ${entry.content}` : `GM: ${entry.content}`;
+            }).join('\n');
+
+            // Send the full conversation history to LLM
+            const response = await fetch('/interact', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ user_input: llmPrompt })
+            });
+
+            const data = await response.json();
+            console.log("LLM Context Updated:", data);
+
+        } catch (error) {
+            console.error('Error sending context to LLM:', error);
+        }
+    }
+
+    function newGame() {
+        // Clear conversation history and reset the game display
+        conversationHistory = [];
+        const gameDisplay = document.getElementById('gameDisplay');
+        gameDisplay.innerHTML = '<p>Welcome to the world of UnscriptedAdventures. The journey begins...</p>';
+        document.getElementById('userInput').value = '';
     }
 
     function clearGameDisplay() {
-        // Clear the game display content
+        // Clear the game display content and reset conversation history
         document.getElementById('gameDisplay').innerHTML = '';
+        conversationHistory = [];
     }
 </script>
+
+
 
 </body>
 </html>
