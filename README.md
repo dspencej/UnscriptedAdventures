@@ -74,8 +74,6 @@ We welcome contributions to UnscriptedAdventures! Here’s how you can help:
 4. **Push your changes** to your forked repository.
 5. **Create a Pull Request** to the main branch of the original repository.
 
-![UnscriptedAdventures Preview](https://github.com/dspencej/UnscriptedAdventures/blob/main/images/social_preview_2.png)
-
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
@@ -87,3 +85,5 @@ If you have any questions, feedback, or suggestions, feel free to reach out via 
 ---
 
 Enjoy your adventures in the world of UnscriptedAdventures!
+
+![UnscriptedAdventures Preview](https://github.com/dspencej/UnscriptedAdventures/blob/main/images/social_preview_2.png)
