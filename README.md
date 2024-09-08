@@ -84,6 +84,6 @@ If you have any questions, feedback, or suggestions, feel free to join the [disc
 
 ---
 
-Enjoy your adventures in the world of UnscriptedAdventures!
+Enjoy your next story in the world of UnscriptedAdventures!
 
 ![UnscriptedAdventures Preview](https://github.com/dspencej/UnscriptedAdventures/blob/main/images/social_preview_2.png)
