@@ -2,6 +2,8 @@
 
 UnscriptedAdventures is a text-based RPG game inspired by Dungeons & Dragons (D&D). The game leverages Large Language Model (LLM) agents to create a dynamic and immersive experience where players interact with a Dungeon Master (DM) and various Non-Player Characters (NPCs) through a chatbot interface.
 
+![UnscriptedAdventures Preview](https://github.com/dspencej/UnscriptedAdventures/blob/main/images/social_preview.png)
+
 ## Features
 
 - **Dynamic Storytelling:** A virtual DM driven by an LLM agent guides the story, responding to player choices and actions.
