@@ -1,16 +1,16 @@
 # UnscriptedAdventures
 
-UnscriptedAdventures is a text-based RPG game inspired by Dungeons & Dragons (D&D). The game leverages Large Language Model (LLM) agents to create a dynamic and immersive experience where players interact with a Dungeon Master (DM) and various Non-Player Characters (NPCs) through a chatbot interface.
+UnscriptedAdventures is a text-based RPG game that leverages Large Language Model (LLM) agents to create a dynamic and immersive experience. Players interact with a virtual Game Master (GM) and various Non-Player Characters (NPCs) through a chatbot interface, making choices that shape the narrative.
 
 ![UnscriptedAdventures Preview](https://github.com/dspencej/UnscriptedAdventures/blob/main/images/social_preview.png)
 
 ## Features
 
-- **Dynamic Storytelling:** A virtual DM driven by an LLM agent guides the story, responding to player choices and actions.
-- **Character Creation:** Create and customize your character with various races, classes, and backgrounds.
-- **Engaging Interactions:** Communicate with NPCs and make choices that influence the game's storyline and outcome.
-- **Reward System:** A unique reward system that evaluates player engagement and adjusts the DM's strategy accordingly.
-
+- **Dynamic Storytelling:** A virtual GM driven by an LLM agent guides the story, adapting to player choices and actions in real-time.
+- **Character Creation:** Customize your character with a variety of traits, professions, and backgrounds to suit your play style.
+- **Engaging Interactions:** Communicate with NPCs and make decisions that influence the game's evolving storyline and outcomes.
+- **Reward System:** An innovative system that evaluates player engagement and adjusts the GM's strategy to keep the experience exciting.
+  
 ## Getting Started
 
 ### Prerequisites
@@ -62,7 +62,7 @@ UnscriptedAdventures is a text-based RPG game inspired by Dungeons & Dragons (D&
 - `templates/`: Contains all HTML templates (`index.html`, `about.html`, `contact.html`, etc.)
 - `static/`: Contains static files like `styles.css`.
 - `characters.json`: Stores the character data for the game.
-- `.gitignore`: Lists files and directories to be ignored by Git (e.g., `.idea/`).
+- `images/`: Contains all image resources.
 
 ## Contributing
 
@@ -80,7 +80,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Contact
 
-If you have any questions, feedback, or suggestions, feel free to join the [discussion](https://github.com/dspencej/UnscriptedAdventures/discussions) open an issue on GitHub.
+If you have any questions, feedback, or suggestions, feel free to join the [discussion](https://github.com/dspencej/UnscriptedAdventures/discussions) open an [issue](https://github.com/dspencej/UnscriptedAdventures/issues/new).
 
 ---
 
