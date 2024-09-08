@@ -80,7 +80,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Contact
 
-If you have any questions, feedback, or suggestions, feel free to reach out via the [Contact Page](http://127.0.0.1:5000/contact) or open an issue on GitHub.
+If you have any questions, feedback, or suggestions, feel free to join the [discussion](https://github.com/dspencej/UnscriptedAdventures/discussions) open an issue on GitHub.
 
 ---
 
