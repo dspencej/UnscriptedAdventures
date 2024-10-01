@@ -1,5 +1,3 @@
-import asyncio
-import logging
 from ollama import AsyncClient
 
 # Function to generate a response using Ollama's LLM asynchronously
