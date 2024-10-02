@@ -2,7 +2,7 @@
 
 UnscriptedAdventures is a text-based RPG game that leverages Large Language Model (LLM) agents to create a dynamic and immersive experience. Players interact with a virtual Game Master (GM) and various Non-Player Characters (NPCs) through a chatbot interface, making choices that shape the narrative.
 
-![UnscriptedAdventures Preview](https://github.com/dspencej/UnscriptedAdventures/blob/main/images/social_preview.png)
+![UnscriptedAdventures Preview](https://raw.githubusercontent.com/dspencej/UnscriptedAdventures/refs/heads/main/images/social_preview.png)
 
 ## Features
 
@@ -86,4 +86,4 @@ If you have any questions, feedback, or suggestions, feel free to join the [disc
 
 Enjoy your next story in the world of UnscriptedAdventures!
 
-![UnscriptedAdventures Preview](https://github.com/dspencej/UnscriptedAdventures/blob/main/images/social_preview_2.png)
+![UnscriptedAdventures Preview](https://raw.githubusercontent.com/dspencej/UnscriptedAdventures/refs/heads/main/images/social_preview_2.png)
