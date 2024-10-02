@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}UnscriptedAdventures{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="icon" href="/images/UA.png" type="image/png">
+    <!-- Allow additional head content to be injected -->
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <!-- Include the navbar for consistent navigation across pages -->
+    {% include 'navbar.html' %}
+
+    <!-- Main content container -->
+    <div class="main-container">
+        <div class="container">
+            <!-- Dynamic content block -->
+            {% block content %}
+            <!-- Default content can be placed here or overridden in specific pages -->
+            {% endblock %}
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
