@@ -1,3 +1,4 @@
+
 # UnscriptedAdventures
 
 UnscriptedAdventures is a text-based RPG game that leverages Large Language Model (LLM) agents to create a dynamic and immersive experience. Players interact with a virtual Game Master (GM) and various Non-Player Characters (NPCs) through a chatbot interface, making choices that shape the narrative.
@@ -12,6 +13,8 @@ UnscriptedAdventures is a text-based RPG game that leverages Large Language Mode
 - **Reward System:** An innovative system that evaluates player engagement and adjusts the GM's strategy to keep the experience exciting.
   
 ## Getting Started
+
+For detailed instructions, see the [Getting Started Guide](https://github.com/dspencej/UnscriptedAdventures/wiki/Getting-Started-Guide) in the Wiki.
 
 ### Prerequisites
 
@@ -66,7 +69,7 @@ UnscriptedAdventures is a text-based RPG game that leverages Large Language Mode
 
 ## Contributing
 
-We welcome contributions to UnscriptedAdventures! Here’s how you can help:
+For guidelines on contributing, see the [How to Contribute](https://github.com/dspencej/UnscriptedAdventures/wiki/How-to-Contribute) section of the Wiki.
 
 1. **Fork the repository** and clone it locally.
 2. **Create a new branch** for your feature or bug fix.
@@ -81,6 +84,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Contact
 
 If you have any questions, feedback, or suggestions, feel free to join the [discussion](https://github.com/dspencej/UnscriptedAdventures/discussions) or open an [issue](https://github.com/dspencej/UnscriptedAdventures/issues/new).
+
+For bug reports, you can use the [Bug Report Template](https://github.com/dspencej/UnscriptedAdventures/issues/new?assignees=&labels=&template=bug_report.md&title=Bug%3A). To suggest a feature, use the [Feature Request Template](https://github.com/dspencej/UnscriptedAdventures/issues/new?assignees=&labels=&template=feature_request.md&title=Feature+Request%3A).
 
 ---
 
