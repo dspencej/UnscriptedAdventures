@@ -1,6 +1,5 @@
 import portalocker
-from flask import Flask, render_template, request, jsonify, session
-import random
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 import json
 import os
 import asyncio
@@ -17,7 +16,7 @@ app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SESSION_PERMANENT'] = False
 app.config['SESSION_FILE_DIR'] = './.flask_session/'
 app.config['SESSION_USE_SIGNER'] = True
-app.config['SESSION_COOKIE_SECURE'] = True  # Enable this when using HTTPS in production
+app.config['SESSION_COOKIE_SECURE'] = False  # Set to True when using HTTPS in production
 
 # Ensure the session directory exists
 if not os.path.exists(app.config['SESSION_FILE_DIR']):
@@ -26,9 +25,9 @@ if not os.path.exists(app.config['SESSION_FILE_DIR']):
 # Initialize Flask-Session
 Session(app)
 
-# File paths for saving character and game data
+# File paths for saving character and preferences data
 CHARACTER_FILE = 'characters.json'
-GAME_STATE_FILE = 'game_state.json'
+PREFERENCES_FILE = 'user_preferences.json'
 
 # Helper functions for file locking with portalocker
 def safe_open_file(filename, mode='r'):
@@ -73,79 +72,38 @@ def save_characters(characters):
         finally:
             safe_close_file(file)
 
-# Load the game state
-def load_game_state():
-    if os.path.exists(GAME_STATE_FILE):
-        file = safe_open_file(GAME_STATE_FILE, 'r')
+# Load user preferences from file
+def load_preferences():
+    if os.path.exists(PREFERENCES_FILE):
+        file = safe_open_file(PREFERENCES_FILE, 'r')
         if file:
             try:
-                content = file.read().strip()
-                return json.loads(content) if content else {}
+                return json.load(file)
             except json.JSONDecodeError as e:
-                app.logger.error(f"Error decoding JSON from {GAME_STATE_FILE}: {e}")
+                app.logger.error(f"Error decoding JSON from {PREFERENCES_FILE}: {e}")
                 return {}
             finally:
                 safe_close_file(file)
     return {}
 
-# Save the game state
-def save_game_state(game_state):
-    file = safe_open_file(GAME_STATE_FILE, 'w')
+# Save preferences to file
+def save_preferences(preferences):
+    file = safe_open_file(PREFERENCES_FILE, 'w')
     if file:
         try:
-            json.dump(game_state, file)
+            json.dump(preferences, file)
         except (TypeError, IOError) as e:
-            app.logger.error(f"Error saving game state to {GAME_STATE_FILE}: {e}")
+            app.logger.error(f"Error saving preferences to {PREFERENCES_FILE}: {e}")
         finally:
             safe_close_file(file)
-
-# Define the GameEnvironment class
-class GameEnvironment:
-    def __init__(self):
-        self.player_engagement = 0
-
-    def player_feedback(self, response):
-        if response == "positive":
-            return random.uniform(0.5, 1.0)
-        elif response == "neutral":
-            return random.uniform(0.2, 0.5)
-        else:
-            return random.uniform(0.0, 0.2)
-
-# Define the GameMasterAgent class
-class GameMasterAgent:
-    def __init__(self):
-        self.reward_history = []
-        self.current_strategy = "introduce_quest"
-        self.strategy_rewards = {
-            "introduce_quest": 0.5,
-            "introduce_npc": 0.5,
-            "introduce_conflict": 0.5
-        }
-
-    def choose_strategy(self):
-        best_strategy = max(self.strategy_rewards, key=self.strategy_rewards.get)
-        return best_strategy
-
-    def update_strategy_rewards(self, feedback_score):
-        self.reward_history.append(feedback_score)
-        if feedback_score > 0.6:
-            self.strategy_rewards[self.current_strategy] += 0.1
-        else:
-            self.strategy_rewards[self.current_strategy] -= 0.1
-
-    def perform_action(self):
-        self.current_strategy = self.choose_strategy()
-        app.logger.info(f"GM chooses to: {self.current_strategy}")
-        return self.current_strategy
-
-environment = GameEnvironment()
-dm_agent = GameMasterAgent()
 
 @app.route('/')
 def index():
     current_character = session.get('current_character', None)
-    conversation_history = session.get('conversation_history', [])
+    # Initialize conversation_history in session if it doesn't exist
+    if 'conversation_history' not in session:
+        session['conversation_history'] = []
+    conversation_history = session.get('conversation_history')
     return render_template('index.html', current_character=current_character, conversation_history=conversation_history)
 
 @app.route('/interact', methods=['POST'])
@@ -157,16 +115,21 @@ def interact():
 
     app.logger.info(f"User input: {user_input}")
 
-    conversation_id = session.get('conversation_id', str(uuid.uuid4()))
-    session['conversation_id'] = conversation_id
-
     user_preferences = session.get('user_preferences', {})
     gm_prompt = f"You are the Game Master in a text-based RPG. Consider these preferences:\n"
 
     for key, value in user_preferences.items():
         gm_prompt += f"- {key}: {value}\n"
 
-    gm_prompt += f"\nThe player input: '{user_input}'. Respond accordingly."
+    # Include previous conversation in the prompt to provide context (optional)
+    conversation_history = session.get('conversation_history', [])
+    if conversation_history:
+        gm_prompt += "\nPrevious conversation:\n"
+        for message in conversation_history[-6:]:  # Include last 6 messages to limit token usage
+            role = 'Player' if message['role'] == 'user' else 'GM'
+            gm_prompt += f"{role}: {message['content']}\n"
+
+    gm_prompt += f"\nPlayer: {user_input}\nGM:"
 
     try:
         gm_response = asyncio.run(generate_gm_response(gm_prompt))
@@ -174,20 +137,180 @@ def interact():
         app.logger.error(f"Error in GM response generation: {e}")
         return jsonify({"status": "error", "message": "Error generating GM response."}), 500
 
-    game_state = load_game_state()
-    if conversation_id not in game_state:
-        game_state[conversation_id] = {'conversation': [], 'preferences': user_preferences}
+    # Update conversation history in the session
+    if 'conversation_history' not in session:
+        session['conversation_history'] = []
 
-    game_state[conversation_id]['conversation'].append({'role': 'user', 'content': user_input})
-    game_state[conversation_id]['conversation'].append({'role': 'gm', 'content': gm_response})
-    save_game_state(game_state)
+    session['conversation_history'].append({'role': 'user', 'content': user_input})
+    session['conversation_history'].append({'role': 'gm', 'content': gm_response})
+
+    # Mark the session as modified to ensure changes are saved
+    session.modified = True
 
     response_data = {
-        'gm_response': gm_response,
-        'conversation_history': game_state[conversation_id]['conversation']
+        'gm_response': gm_response
     }
 
     return jsonify(response_data)
+
+@app.route('/new_game', methods=['POST'])
+def new_game():
+    session['conversation_history'] = []
+    session.modified = True
+    return jsonify({'message': 'New game started.'})
+
+@app.route('/clear_game', methods=['POST'])
+def clear_game():
+    session['conversation_history'] = []
+    session.modified = True
+    return jsonify({'message': 'Game display cleared.'})
+
+@app.route('/save_game', methods=['POST'])
+def save_game():
+    # Save the conversation history to a file (or database)
+    game_state = session.get('conversation_history', [])
+    try:
+        with open('saved_game.json', 'w') as f:
+            json.dump(game_state, f)
+        return jsonify({'message': 'Game saved successfully.'})
+    except Exception as e:
+        app.logger.error(f"Error saving game: {e}")
+        return jsonify({'message': 'Error saving game.'}), 500
+
+@app.route('/load_game', methods=['GET'])
+def load_game():
+    try:
+        with open('saved_game.json', 'r') as f:
+            game_state = json.load(f)
+        session['conversation_history'] = game_state
+        session.modified = True
+        return jsonify({'status': 'success', 'message': 'Game loaded successfully.', 'game_state': game_state})
+    except FileNotFoundError:
+        return jsonify({'status': 'error', 'message': 'No saved game found.'}), 404
+    except Exception as e:
+        app.logger.error(f"Error loading game: {e}")
+        return jsonify({'status': 'error', 'message': 'Error loading game.'}), 500
+
+@app.route('/about')
+def about():
+    return render_template('about.html')
+
+@app.route('/contact')
+def contact():
+    return render_template('contact.html')
+
+@app.route('/submit_contact', methods=['POST'])
+def submit_contact():
+    name = request.form.get('name')
+    email = request.form.get('email')
+    message = request.form.get('message')
+
+    # Process the data (e.g., send an email or log the message)
+
+    # Redirect to the thank-you page after processing the form
+    return redirect(url_for('thank_you'))
+
+@app.route('/character_creation')
+def character_creation():
+    return render_template('character_creation.html')
+
+@app.route('/save_character', methods=['POST'])
+def save_character():
+    character_data = request.json  # Get the character data sent from the frontend
+
+    # Basic validation to ensure all fields are present
+    if not all([character_data.get('name'), character_data.get('race'), character_data.get('class'),
+                character_data.get('background')]):
+        return jsonify({'message': 'All fields are required!'}), 400
+
+    characters = load_characters()  # Load existing characters from the file
+
+    # Save the new character
+    characters.append(character_data)
+    save_characters(characters)  # Save the updated character list back to the file
+
+    # Return success message
+    return jsonify({'message': 'Character saved successfully!'})
+
+@app.route('/thank_you')
+def thank_you():
+    return render_template('thank_you.html')
+
+@app.route('/manage_characters')
+def manage_characters():
+    characters = load_characters()  # Load existing characters from the file
+    return render_template('manage_characters.html', characters=characters)
+
+@app.route('/select_character/<int:character_id>')
+def select_character(character_id):
+    characters = load_characters()
+
+    if character_id < len(characters):
+        selected_character = characters[character_id]
+        session['current_character'] = selected_character  # Set current character in session
+        session.modified = True
+        return jsonify({'status': 'success', 'character': selected_character})
+    else:
+        return jsonify({'status': 'error', 'message': 'Character not found'}), 404
+
+@app.route('/delete_character/<int:character_id>', methods=['POST'])
+def delete_character(character_id):
+    characters = load_characters()
+
+    if character_id < len(characters):
+        deleted_character = characters.pop(character_id)
+        save_characters(characters)  # Save updated character list
+        return jsonify({'status': 'success', 'message': f"Character {deleted_character['name']} deleted successfully!"})
+    else:
+        return jsonify({'status': 'error', 'message': 'Character not found'}), 404
+
+@app.route('/save_current_character', methods=['POST'])
+def save_current_character():
+    current_character = session.get('current_character')
+
+    if not current_character:
+        return jsonify({'status': 'error', 'message': 'No character to save'}), 400
+
+    characters = load_characters()
+
+    # Update the existing character or append a new one
+    for i, char in enumerate(characters):
+        if char['name'] == current_character['name']:
+            characters[i] = current_character
+            break
+    else:
+        characters.append(current_character)
+
+    save_characters(characters)  # Save updated character list
+    return jsonify({'status': 'success', 'message': 'Current character saved successfully!'})
+
+# Game Preferences Routes
+@app.route('/game_preferences')
+def game_preferences():
+    # Load the saved preferences (if available)
+    preferences = load_preferences()
+    session['user_preferences'] = preferences  # Store preferences in session
+    session.modified = True
+    return render_template('game_preferences.html', preferences=preferences)
+
+@app.route('/submit_preferences', methods=['POST'])
+def submit_preferences():
+    preferences_data = request.json.get('preferences', {})
+
+    # Basic validation to ensure all fields are provided
+    if not all([preferences_data.get('gameStyle'), preferences_data.get('tone'),
+                preferences_data.get('difficulty'), preferences_data.get('theme')]):
+        return jsonify({'message': 'All preferences are required!'}), 400
+
+    # Save preferences to file
+    save_preferences(preferences_data)
+
+    # Store preferences in session
+    session['user_preferences'] = preferences_data
+    session.modified = True
+
+    # Send a success response
+    return jsonify({'message': 'Preferences saved successfully!'})
 
 if __name__ == '__main__':
     # Set up logging

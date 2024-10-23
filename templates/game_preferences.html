@@ -2,99 +2,82 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Game Preferences - UnscriptedAdventures</title>
-    <link href="/static/styles.css" rel="stylesheet">
-    <style>
-        .loading-spinner {
-            display: none; /* Hidden by default */
-            width: 20px;
-            height: 20px;
-            border: 3px solid #f3f3f3; /* Light grey */
-            border-top: 3px solid #7a4a36; /* Spinner color */
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-left: 10px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-    </style>
+    <link href="{{ url_for('static', filename='styles.css') }}" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Cinzel+Decorative:wght@1000&display=swap" rel="stylesheet">
 </head>
 <body>
     {% include 'navbar.html' %}
     <h1>Choose Your Adventure Style</h1>
-    <div class="container">
-        <form id="preferencesForm">
+    <div class="game-preferences-container">
+        <form class="game-preferences-form" id="preferencesForm">
             <label for="gameStyle">Preferred Game Style:</label>
             <select id="gameStyle" name="gameStyle" required>
-                <option value="combat">Combat-Focused</option>
-                <option value="narrative">Narrative-Driven</option>
-                <option value="exploration">Exploration-Based</option>
-                <option value="puzzle">Puzzle-Solving</option>
+                <option value="combat" {% if preferences.get('gameStyle') == 'combat' %}selected{% endif %}>Combat-Focused</option>
+                <option value="narrative" {% if preferences.get('gameStyle') == 'narrative' %}selected{% endif %}>Narrative-Driven</option>
+                <option value="exploration" {% if preferences.get('gameStyle') == 'exploration' %}selected{% endif %}>Exploration-Based</option>
+                <option value="puzzle" {% if preferences.get('gameStyle') == 'puzzle' %}selected{% endif %}>Puzzle-Solving</option>
             </select>
 
             <label for="tone">Preferred Tone:</label>
             <select id="tone" name="tone" required>
-                <option value="lighthearted">Lighthearted</option>
-                <option value="serious">Serious</option>
-                <option value="dark">Dark and Gritty</option>
-                <option value="mysterious">Mysterious</option>
+                <option value="lighthearted" {% if preferences.get('tone') == 'lighthearted' %}selected{% endif %}>Lighthearted</option>
+                <option value="serious" {% if preferences.get('tone') == 'serious' %}selected{% endif %}>Serious</option>
+                <option value="dark" {% if preferences.get('tone') == 'dark' %}selected{% endif %}>Dark and Gritty</option>
+                <option value="mysterious" {% if preferences.get('tone') == 'mysterious' %}selected{% endif %}>Mysterious</option>
             </select>
 
             <label for="difficulty">Difficulty Level:</label>
             <select id="difficulty" name="difficulty" required>
-                <option value="easy">Easy</option>
-                <option value="medium">Medium</option>
-                <option value="hard">Hard</option>
-                <option value="extreme">Extreme</option>
+                <option value="easy" {% if preferences.get('difficulty') == 'easy' %}selected{% endif %}>Easy</option>
+                <option value="medium" {% if preferences.get('difficulty') == 'medium' %}selected{% endif %}>Medium</option>
+                <option value="hard" {% if preferences.get('difficulty') == 'hard' %}selected{% endif %}>Hard</option>
+                <option value="extreme" {% if preferences.get('difficulty') == 'extreme' %}selected{% endif %}>Extreme</option>
             </select>
 
             <label for="theme">Preferred Theme:</label>
             <select id="theme" name="theme" required>
-                <option value="fantasy">Fantasy</option>
-                <option value="sci-fi">Science Fiction</option>
-                <option value="post-apocalyptic">Post-Apocalyptic</option>
-                <option value="historical">Historical</option>
+                <option value="fantasy" {% if preferences.get('theme') == 'fantasy' %}selected{% endif %}>Fantasy</option>
+                <option value="sci-fi" {% if preferences.get('theme') == 'sci-fi' %}selected{% endif %}>Science Fiction</option>
+                <option value="post-apocalyptic" {% if preferences.get('theme') == 'post-apocalyptic' %}selected{% endif %}>Post-Apocalyptic</option>
+                <option value="historical" {% if preferences.get('theme') == 'historical' %}selected{% endif %}>Historical</option>
             </select>
 
-            <button type="button" onclick="submitPreferences()">Submit Preferences</button>
-            <div id="loadingSpinner" class="loading-spinner"></div>
+            <div class="button-container">
+                <button type="button" onclick="submitPreferences()">Submit Preferences</button>
+                <div id="loadingSpinner" class="loading-spinner"></div>
+            </div>
         </form>
     </div>
 
-<script>
-    async function submitPreferences() {
-        const preferences = {
-            gameStyle: document.getElementById('gameStyle').value,
-            tone: document.getElementById('tone').value,
-            difficulty: document.getElementById('difficulty').value,
-            theme: document.getElementById('theme').value
-        };
+    <script>
+        async function submitPreferences() {
+            const preferences = {
+                gameStyle: document.getElementById('gameStyle').value,
+                tone: document.getElementById('tone').value,
+                difficulty: document.getElementById('difficulty').value,
+                theme: document.getElementById('theme').value
+            };
 
-        const loadingSpinner = document.getElementById('loadingSpinner');
-        loadingSpinner.style.display = 'inline-block'; // Show the loading spinner
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            loadingSpinner.style.display = 'inline-block'; // Show the loading spinner
 
-        try {
-            const response = await fetch('/submit_preferences', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ preferences })
-            });
-            const data = await response.json();
-            alert(data.message); // Notify user of success
-        } catch (error) {
-            console.error('Error submitting preferences:', error);
-        } finally {
-            loadingSpinner.style.display = 'none'; // Hide the loading spinner
+            try {
+                const response = await fetch('/submit_preferences', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ preferences })
+                });
+                const data = await response.json();
+                alert(data.message); // Notify user of success
+            } catch (error) {
+                console.error('Error submitting preferences:', error);
+            } finally {
+                loadingSpinner.style.display = 'none'; // Hide the loading spinner
+            }
         }
-    }
-</script>
-
-
+    </script>
 </body>
 </html>

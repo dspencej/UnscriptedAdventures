@@ -1,5 +1,6 @@
 from ollama import AsyncClient
 
+
 # Function to generate a response using Ollama's LLM asynchronously
 async def generate_gm_response(prompt):
     try:
@@ -9,6 +10,7 @@ async def generate_gm_response(prompt):
         return response['message']['content']
     except Exception as e:
         return f"Error generating response: {e}"
+
 
 # Function to handle streaming responses from Ollama's LLM
 async def generate_gm_response_stream(prompt):

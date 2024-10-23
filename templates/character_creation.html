@@ -2,16 +2,17 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Character Creation - UnscriptedAdventures</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Cinzel+Decorative:wght@400;700&display=swap" rel="stylesheet">
     <link href="{{ url_for('static', filename='styles.css') }}" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Cinzel+Decorative:wght@700&display=swap" rel="stylesheet">
 </head>
 <body>
     {% include 'navbar.html' %}
+
     <h1>Character Creation</h1>
-    <div class="container">
-        <form id="characterForm">
+
+    <div class="character-creation-container">
+        <form class="character-form" id="characterForm">
             <label for="characterName">Character Name:</label>
             <input type="text" id="characterName" name="characterName" required>
 
@@ -21,11 +22,7 @@
                 <option value="Elf">Elf</option>
                 <option value="Dwarf">Dwarf</option>
                 <option value="Halfling">Halfling</option>
-                <option value="Tiefling">Tiefling</option>
-                <option value="Dragonborn">Dragonborn</option>
-                <option value="Gnome">Gnome</option>
-                <option value="Half-Orc">Half-Orc</option>
-                <option value="Half-Elf">Half-Elf</option>
+                <!-- Add more options as needed -->
             </select>
 
             <label for="characterClass">Class:</label>
@@ -33,34 +30,29 @@
                 <option value="Fighter">Fighter</option>
                 <option value="Wizard">Wizard</option>
                 <option value="Rogue">Rogue</option>
-                <option value="Cleric">Cleric</option>
-                <option value="Paladin">Paladin</option>
-                <option value="Ranger">Ranger</option>
-                <option value="Druid">Druid</option>
-                <option value="Monk">Monk</option>
-                <option value="Warlock">Warlock</option>
-                <option value="Bard">Bard</option>
+                <!-- Add more options as needed -->
             </select>
 
             <label for="characterBackground">Background:</label>
             <select id="characterBackground" name="characterBackground">
                 <option value="Acolyte">Acolyte</option>
                 <option value="Criminal">Criminal</option>
-                <option value="Folk Hero">Folk Hero</option>
-                <option value="Noble">Noble</option>
-                <option value="Soldier">Soldier</option>
-                <option value="Sage">Sage</option>
-                <option value="Urchin">Urchin</option>
-                <option value="Entertainer">Entertainer</option>
-                <option value="Guild Artisan">Guild Artisan</option>
+                <!-- Add more options as needed -->
             </select>
 
-            <button type="button" onclick="saveCharacter()">Save Character</button>
+            <div class="button-container">
+                <button type="button" id="saveButton" onclick="saveCharacter()">Save Character</button>
+                <div id="loadingSpinner" class="loading-spinner"></div>
+            </div>
         </form>
     </div>
 
     <script>
         function saveCharacter() {
+            const saveButton = document.getElementById('saveButton');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+
+            // Collect character data
             const characterData = {
                 name: document.getElementById('characterName').value,
                 race: document.getElementById('characterRace').value,
@@ -68,6 +60,11 @@
                 background: document.getElementById('characterBackground').value
             };
 
+            // Show the loading spinner and disable the button
+            saveButton.disabled = true;
+            loadingSpinner.style.display = 'inline-block';
+
+            // Send data to the backend
             fetch('/save_character', {
                 method: 'POST',
                 headers: {
@@ -77,9 +74,15 @@
             })
             .then(response => response.json())
             .then(data => {
-                alert(data.message);
+                alert(data.message);  // Notify the user that the character was saved
+                document.getElementById('characterForm').reset(); // Clear the form
             })
-            .catch(error => console.error('Error:', error));
+            .catch(error => console.error('Error:', error))
+            .finally(() => {
+                // Hide the loading spinner and re-enable the button
+                loadingSpinner.style.display = 'none';
+                saveButton.disabled = false;
+            });
         }
     </script>
 </body>
