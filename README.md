@@ -16,15 +16,6 @@ UnscriptedAdventures is a text-based RPG game that leverages Large Language Mode
 
 For detailed instructions, see the [Getting Started Guide](https://github.com/dspencej/UnscriptedAdventures/wiki/Getting-Started-Guide) in the Wiki.
 
-### Prerequisites
-
-- **Python 3.7+** is required.
-- **Flask**: Install Flask using pip:
-
-  ```bash
-  pip install flask
-  ```
-
 ### Installation
 
 1. **Clone the Repository:**
@@ -58,14 +49,6 @@ For detailed instructions, see the [Getting Started Guide](https://github.com/ds
 2. **Open Your Browser:**
 
    Visit `http://127.0.0.1:5000` in your web browser to start playing!
-
-### Project Structure
-
-- `app.py`: The main application file that runs the Flask server and handles routes.
-- `templates/`: Contains all HTML templates (`index.html`, `about.html`, `contact.html`, etc.)
-- `static/`: Contains static files like `styles.css`.
-- `characters.json`: Stores the character data for the game.
-- `images/`: Contains all image resources.
 
 ## Contributing
 
