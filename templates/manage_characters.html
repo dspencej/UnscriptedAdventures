@@ -2,108 +2,39 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manage Characters - UnscriptedAdventures</title>
-    <style>
-        body {
-            font-family: 'Cinzel', serif;
-            background-color: #f2e6d9;
-            background-image: url('https://www.transparenttextures.com/patterns/old-mathematics.png');
-            color: #4b2e2a;
-            margin: 0;
-            padding: 0;
-            line-height: 1.6;
-        }
-
-        .navbar {
-            background-color: #7a4a36;
-            padding: 10px;
-            text-align: center;
-        }
-
-        .navbar a {
-            color: #fff8e7;
-            text-decoration: none;
-            margin: 0 15px;
-            font-size: 18px;
-        }
-
-        .navbar a:hover {
-            text-decoration: underline;
-        }
-
-        h1 {
-            font-family: 'Cinzel Decorative', serif;
-            text-align: center;
-            color: #7a4a36;
-            font-size: 3em;
-            margin-bottom: 20px;
-            text-shadow: 2px 2px #d4c5a2;
-        }
-
-        .container {
-            max-width: 800px;
-            margin: auto;
-            padding: 20px;
-            background-color: rgba(255, 248, 230, 0.9);
-            border: 2px solid #7a4a36;
-            border-radius: 10px;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
-        }
-
-        .character-list {
-            list-style-type: none;
-            padding: 0;
-        }
-
-        .character-list li {
-            padding: 10px;
-            margin-bottom: 5px;
-            background-color: #fff8e7;
-            border: 1px solid #7a4a36;
-            border-radius: 5px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .character-list button,
-        .save-button { /* Updated selector to apply to both button types */
-            padding: 5px 10px;
-            margin-left: 5px;
-            font-size: 14px;
-            border: 1px solid #7a4a36;
-            border-radius: 5px;
-            background-color: #7a4a36;
-            color: #fff8e7;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-
-        .character-list button:hover,
-        .save-button:hover {
-            background-color: #4b2e2a;
-        }
-    </style>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Cinzel+Decorative:wght@700&display=swap" rel="stylesheet">
+    <link href="{{ url_for('static', filename='styles.css') }}" rel="stylesheet">
 </head>
 <body>
     {% include 'navbar.html' %}
     <h1>Manage Characters</h1>
-    <div class="container">
-        <ul class="character-list">
-            {% for character in characters %}
-            <li>
-                {{ character.name }} - {{ character.race }} - {{ character.class }}
-                <div>
-                    <button onclick="loadCharacter({{ loop.index0 }})">Load</button>
-                    <button onclick="deleteCharacter({{ loop.index0 }})">Delete</button>
-                </div>
-            </li>
-            {% endfor %}
-        </ul>
-
-        <button class="save-button" onclick="saveCurrentCharacter()">Save Current Character</button>
+    <div class="manage-characters-container">
+        <table class="character-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Race</th>
+                    <th>Class</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for character in characters %}
+                <tr>
+                    <td>{{ character.name }}</td>
+                    <td>{{ character.race }}</td>
+                    <td>{{ character.class }}</td>
+                    <td>
+                        <div class="button-container">
+                            <button onclick="loadCharacter({{ loop.index0 }})">Load</button>
+                            <button onclick="deleteCharacter({{ loop.index0 }})">Delete</button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 
     <script>
@@ -112,7 +43,7 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.status === 'success') {
-                        alert('Character loaded: ' + JSON.stringify(data.character));
+                        alert('Character loaded: ' + data.character.name);
                         window.location.href = '/';
                     } else {
                         alert('Error loading character: ' + data.message);
@@ -122,30 +53,21 @@
         }
 
         function deleteCharacter(characterId) {
-            fetch(`/delete_character/${characterId}`, {
-                method: 'POST'
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    alert(data.message);
-                    location.reload();
-                } else {
-                    alert('Error deleting character: ' + data.message);
-                }
-            })
-            .catch(error => console.error('Error:', error));
-        }
-
-        function saveCurrentCharacter() {
-            fetch('/save_current_character', {
-                method: 'POST'
-            })
-            .then(response => response.json())
-            .then(data => {
-                alert(data.message);
-            })
-            .catch(error => console.error('Error:', error));
+            if (confirm('Are you sure you want to delete this character?')) {
+                fetch(`/delete_character/${characterId}`, {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        alert(data.message);
+                        location.reload();
+                    } else {
+                        alert('Error deleting character: ' + data.message);
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+            }
         }
     </script>
 </body>

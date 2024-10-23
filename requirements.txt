@@ -1,1 +1,4 @@
 Flask>=2.0.0
+ollama>=0.3.2
+Flask-Session>=0.8.0
+ruff>=0.7.0

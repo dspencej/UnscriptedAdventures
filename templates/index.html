@@ -2,231 +2,51 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <title>UnscriptedAdventures</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UnscriptedAdventures</title>
-    <!-- Favicon -->
-    <link rel="icon" href="https://raw.githubusercontent.com/dspencej/UnscriptedAdventures/refs/heads/main/images/UA.png" type="image/png">
-
-    <style>
-        body {
-            font-family: 'Cinzel', serif;
-            background-color: #f2e6d9;
-            background-image: url('https://www.transparenttextures.com/patterns/old-mathematics.png');
-            color: #4b2e2a;
-            margin: 0;
-            padding: 0;
-            line-height: 1.6;
-        }
-
-        .navbar {
-            background-color: #7a4a36;
-            padding: 10px;
-            text-align: center;
-        }
-
-        .navbar a {
-            color: #fff8e7;
-            text-decoration: none;
-            margin: 0 15px;
-            font-size: 18px;
-        }
-
-        .navbar a:hover {
-            text-decoration: underline;
-        }
-
-        h1 {
-            font-family: 'Cinzel Decorative', serif;
-            text-align: center;
-            color: #7a4a36;
-            font-size: 3em;
-            margin-bottom: 20px;
-            text-shadow: 2px 2px #d4c5a2;
-        }
-
-        .main-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px;
-            max-width: 1000px;
-            margin: 0 auto;
-            overflow-y: auto;
-        }
-
-        .game-display {
-            width: 100%;
-            max-width: 960px;
-            height: 200px;
-            padding: 15px;
-            border: 2px solid #7a4a36;
-            background-color: rgba(255, 248, 230, 0.9);
-            border-radius: 10px;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
-            margin-bottom: 20px;
-            overflow-y: auto;
-        }
-
-        /* Custom Scrollbar Styling */
-        .game-display::-webkit-scrollbar {
-            width: 12px; /* Width of the scrollbar */
-        }
-
-        .game-display::-webkit-scrollbar-track {
-            background: rgba(255, 248, 230, 0.6); /* Scrollbar track color */
-            border-radius: 10px;
-        }
-
-        .game-display::-webkit-scrollbar-thumb {
-            background-color: #7a4a36; /* Scrollbar thumb color */
-            border-radius: 10px;
-            border: 2px solid #d4c5a2; /* Border around the scrollbar thumb */
-        }
-
-        .container {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            gap: 20px;
-            width: 100%;
-            max-width: 960px; /* Set maximum width to keep content aligned */
-        }
-
-        #game {
-            flex: 1;
-            max-width: 600px; /* Set a maximum width to prevent overflow */
-            padding: 15px;
-            border: 2px solid #7a4a36;
-            background-color: rgba(255, 248, 230, 0.9);
-            border-radius: 10px;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
-            overflow-y: auto;
-        }
-
-        .character-sheet {
-            flex: 0 0 300px; /* Fixed width for character sheet */
-            padding: 15px;
-            border: 2px solid #7a4a36;
-            background-color: rgba(255, 248, 230, 0.9);
-            border-radius: 10px;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
-        }
-
-        .character-sheet h2 {
-            font-size: 24px;
-            color: #4b2e2a;
-            text-align: center;
-            margin-bottom: 10px;
-        }
-
-        .character-sheet p {
-            margin: 5px 0;
-        }
-
-        .button-container {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-
-        textarea {
-            width: 100%;
-            height: 120px;
-            margin-bottom: 10px;
-            padding: 10px;
-            font-size: 16px;
-            border: 2px solid #7a4a36;
-            border-radius: 5px;
-            background-color: #fff8e7;
-            color: #4b2e2a;
-            max-width: calc(100% - 30px); /* Max width within the container with some padding */
-            max-height: 150px; /* Max height to prevent overflow */
-            resize: none; /* Allow resizing both horizontally and vertically */
-            /* Custom Scrollbar Styling for Textarea */
-            overflow: auto;
-        }
-        /* Matching Scrollbar Styling for Textarea */
-        textarea::-webkit-scrollbar {
-            width: 12px; /* Width of the scrollbar */
-        }
-
-        textarea::-webkit-scrollbar-track {
-            background: rgba(255, 248, 230, 0.6); /* Scrollbar track color */
-            border-radius: 10px;
-        }
-
-        textarea::-webkit-scrollbar-thumb {
-            background-color: #7a4a36; /* Scrollbar thumb color */
-            border-radius: 10px;
-            border: 2px solid #d4c5a2; /* Border around the scrollbar thumb */
-        }
-
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-            border: 2px solid #7a4a36;
-            border-radius: 5px;
-            background-color: #7a4a36;
-            color: #fff8e7;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-
-        button:hover {
-            background-color: #4b2e2a;
-        }
-
-        #response {
-            margin-top: 20px;
-            padding: 15px;
-            border: 2px solid #7a4a36;
-            background-color: rgba(255, 248, 230, 0.9);
-            border-radius: 10px;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-        }
-
-        strong {
-            color: #7a4a36;
-        }
-    </style>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;
-    700&family=Cinzel+Decorative:wght@700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Cinzel+Decorative:wght@700&display=swap" rel="stylesheet">
+    <link href="{{ url_for('static', filename='styles.css') }}" rel="stylesheet">
 </head>
 <body>
     {% include 'navbar.html' %}
     <h1>UnscriptedAdventures</h1>
 
-    <div class="main-container">
+    <!-- Apply the index-container class for consistent layout styling -->
+    <div class="index-container">
         <!-- Game Display Container -->
         <div class="game-display" id="gameDisplay">
-            <p>Welcome to the world of UnscriptedAdventures. The journey begins...</p>
-            <!-- Additional game narrative content can be dynamically added here -->
+            <!-- The game display content will be populated by JavaScript -->
+        </div>
+
+        <!-- Game Control Buttons (Moved below the game display) -->
+        <div class="game-controls">
+            <div class="button-container">
+                <button onclick="newGame()" aria-label="Start a new game">New Game</button>
+                <button onclick="saveGame()" aria-label="Save your game">Save Game</button>
+                <button onclick="loadGame()" aria-label="Load a saved game">Load Game</button>
+                <button onclick="clearGameDisplay()" aria-label="Clear game display">Clear</button>
+            </div>
         </div>
 
         <!-- Input and Character Sheet Containers -->
-        <div class="container">
-            <div id="game">
-                <textarea id="userInput" placeholder="Enter your response..."></textarea>
+        <div class="input-character-layout">
+            <!-- Input Section -->
+            <div class="input-section">
+                <textarea id="userInput" placeholder="Enter your response..." aria-label="User input"></textarea>
                 <div class="button-container">
-                    <button onclick="sendInteraction()">Send</button>
-                    <button onclick="clearGameDisplay()">Clear</button>
-                </div>
-                <div id="response">
-                    <p><strong>DM Action:</strong> <span id="dmAction"></span></p>
-                    <p><strong>Feedback Score:</strong> <span id="feedbackScore"></span></p>
-                    <p><strong>Updated Rewards:</strong> <span id="updatedRewards"></span></p>
+                    <button onclick="sendInteraction()" aria-label="Send your message">Send</button>
+                    <div id="loadingSpinner" class="loading-spinner"></div>
                 </div>
             </div>
 
+            <!-- Character Sheet Section -->
             {% if current_character %}
             <div class="character-sheet">
                 <h2>{{ current_character.name }}</h2>
                 <p><strong>Race:</strong> {{ current_character.race }}</p>
                 <p><strong>Class:</strong> {{ current_character.class }}</p>
                 <p><strong>Background:</strong> {{ current_character.background }}</p>
-                <!-- Additional fields can be added here -->
             </div>
             {% else %}
             <div class="character-sheet">
@@ -237,37 +57,129 @@
     </div>
 
 <script>
-    function sendInteraction() {
-        const userInput = document.getElementById('userInput').value;
+    // Retrieve conversation history from server-side variable
+    const conversationHistory = {{ conversation_history | tojson }};
 
-        fetch('/interact', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ user_input: userInput })
-        })
-        .then(response => response.json())
-        .then(data => {
-            // Display DM Action in the game display
+    document.addEventListener('DOMContentLoaded', (event) => {
+        const gameDisplay = document.getElementById('gameDisplay');
+        // Clear the game display to prevent duplication
+        gameDisplay.innerHTML = '';
+
+        if (conversationHistory.length > 0) {
+            conversationHistory.forEach(message => {
+                if (message.role === 'user') {
+                    gameDisplay.innerHTML += `<pre class="formatted-text"><strong>You:</strong> ${message.content}</pre>`;
+                } else {
+                    gameDisplay.innerHTML += `<pre class="formatted-text"><strong>GM:</strong> ${message.content}</pre>`;
+                }
+            });
+            gameDisplay.scrollTop = gameDisplay.scrollHeight;
+        } else {
+            // Display the initial welcome message
+            gameDisplay.innerHTML = '<p>Welcome to the world of UnscriptedAdventures. The journey begins...</p>';
+        }
+    });
+
+    async function sendInteraction() {
+        const userInputBox = document.getElementById('userInput');
+        const userInput = userInputBox.value.trim();
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const sendButton = document.querySelector('.button-container button');
+
+        if (!userInput) {
+            alert("Please enter a response before sending.");
+            return;
+        }
+
+        // Disable the send button
+        sendButton.disabled = true;
+        loadingSpinner.style.display = 'inline-block';
+
+        try {
+            const response = await fetch('/interact', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ user_input: userInput })
+            });
+
+            const data = await response.json();
+
+            if (response.status === 400) {
+                alert(data.message);
+                return;
+            }
+
             const gameDisplay = document.getElementById('gameDisplay');
-            gameDisplay.innerHTML += `<p>${data.dm_action}</p>`;
-            gameDisplay.scrollTop = gameDisplay.scrollHeight; // Scroll to the bottom
+            gameDisplay.innerHTML += `<pre class="formatted-text"><strong>You:</strong> ${userInput}</pre>`;
+            gameDisplay.innerHTML += `<pre class="formatted-text"><strong>GM:</strong> ${data.gm_response}</pre>`;
+            gameDisplay.scrollTop = gameDisplay.scrollHeight;
 
-            // Update response elements
-            document.getElementById('dmAction').innerText = data.dm_action;
-            document.getElementById('feedbackScore').innerText = data.feedback_score.toFixed(2);
-            document.getElementById('updatedRewards').innerText = JSON.stringify(data.updated_rewards);
+            userInputBox.value = '';
+            userInputBox.setAttribute('placeholder', 'Enter your response...');
 
-            // Clear the user input box
-            document.getElementById('userInput').value = '';
-        })
-        .catch(error => console.error('Error:', error));
+        } catch (error) {
+            console.error('Error:', error);
+        } finally {
+            // Enable the send button
+            sendButton.disabled = false;
+            loadingSpinner.style.display = 'none';
+        }
+    }
+
+    function newGame() {
+        if (confirm('Are you sure you want to start a new game? This will reset your current progress.')) {
+            fetch('/new_game', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message);
+                    location.reload(); // Reload the page to reflect changes
+                })
+                .catch(error => console.error('Error starting new game:', error));
+        }
     }
 
     function clearGameDisplay() {
-        // Clear the game display content
-        document.getElementById('gameDisplay').innerHTML = '';
+        if (confirm('Are you sure you want to clear the game display?')) {
+            fetch('/clear_game', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message);
+                    location.reload(); // Reload the page to reflect changes
+                })
+                .catch(error => console.error('Error clearing game display:', error));
+        }
+    }
+
+    async function saveGame() {
+        try {
+            const response = await fetch('/save_game', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            const data = await response.json();
+            alert(data.message);
+        } catch (error) {
+            console.error('Error saving game:', error);
+        }
+    }
+
+    async function loadGame() {
+        try {
+            const response = await fetch('/load_game', { method: 'GET' });
+            const data = await response.json();
+            if (data.status === "success") {
+                alert(data.message);
+                location.reload(); // Reload the page to reflect loaded game state
+            } else {
+                alert("Failed to load game: " + data.message);
+            }
+        } catch (error) {
+            console.error('Error loading game:', error);
+        }
     }
 </script>
 
