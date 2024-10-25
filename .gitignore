@@ -2,3 +2,6 @@
 .idea/
 *.json
 .flask_session
+.cache
+chromadb/*
+resources/*.pdf

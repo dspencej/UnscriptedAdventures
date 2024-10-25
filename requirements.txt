@@ -1,4 +1,16 @@
-Flask>=2.0.0
-ollama>=0.3.2
-Flask-Session>=0.8.0
-ruff>=0.7.0
+# Flask framework and related dependencies
+Flask==3.0.3
+Flask-Session==0.8.0
+
+# LLM and agent-related libraries
+ollama==0.3.3
+autogen-agentchat==0.2.37
+autogen==0.3.1
+sentence-transformers==3.2.1
+chromadb==0.5.15
+
+# Utilities and tooling
+portalocker==2.10.1
+pypdf==5.0.1
+flaml[automl]==2.3.1
+ruff==0.7.0
