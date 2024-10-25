@@ -3,5 +3,10 @@
 *.json
 .flask_session
 .cache
-chromadb/*
-resources/*.pdf
+chromadb_dm/*
+chromadb_st/*
+resources/dm_resources/*.pdf
+resources/storytelling_resources/*.pdf
+tmp/
+directory_structure.txt
+map_project.py

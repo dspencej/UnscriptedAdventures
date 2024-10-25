@@ -133,19 +133,36 @@ def interact():
 
     app.logger.info(f"User input: {user_input}")
 
-    # Retrieve user preferences from the session
+    # Retrieve user preferences and conversation history from the session
     user_preferences = session.get("user_preferences", {})
-    # Retrieve conversation history from session
     conversation_history = session.get("conversation_history", [])
+    storyline = session.get("storyline", "")
 
     try:
         # Use a new event loop for asyncio
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         gm_response = loop.run_until_complete(
-            generate_gm_response(user_input, conversation_history, user_preferences)
+            generate_gm_response(
+                user_input, conversation_history, user_preferences, storyline
+            )
         )
         loop.close()
+
+        # Log the GM response for debugging
+        app.logger.debug(f"GM response: {gm_response}")
+
+        # Store the new storyline if it's returned in the GM response
+        if isinstance(gm_response, dict):
+            if "full_storyline" in gm_response:
+                storyline = gm_response["full_storyline"]
+                session["storyline"] = storyline  # Update storyline in session
+
+            if "dm_response" in gm_response:
+                gm_response_text = gm_response["dm_response"]
+            else:
+                gm_response_text = "Unknown response"
+
     except Exception as e:
         app.logger.error(f"Error in GM response generation: {e}")
         return jsonify(
@@ -153,17 +170,16 @@ def interact():
         ), 500
 
     # Update conversation history in the session
-    if "conversation_history" not in session:
-        session["conversation_history"] = []
+    session["conversation_history"] = conversation_history
 
+    # Append user input and GM response to the conversation history
     session["conversation_history"].append({"role": "user", "content": user_input})
-    session["conversation_history"].append({"role": "gm", "content": gm_response})
+    session["conversation_history"].append({"role": "gm", "content": gm_response_text})
 
     # Mark the session as modified to ensure changes are saved
     session.modified = True
 
-    response_data = {"gm_response": gm_response}
-
+    response_data = {"gm_response": gm_response_text}
     return jsonify(response_data)
 
 

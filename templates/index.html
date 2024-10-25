@@ -78,6 +78,14 @@
             // Display the initial welcome message
             gameDisplay.innerHTML = '<p>Welcome to the world of UnscriptedAdventures. The journey begins...</p>';
         }
+
+        // Add the event listener for pressing "Enter" in the textarea
+        document.getElementById('userInput').addEventListener('keydown', function(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault(); // Prevents creating a new line in the textarea
+                sendInteraction(); // Calls the send function when Enter is pressed
+            }
+        });
     });
 
     async function sendInteraction() {

@@ -1,162 +1,136 @@
 # llm/prompts.py
-def router_agent_prompt(
-    preferences_text, context, sender, message_content, agents_descriptions
-):
-    # Build the agents descriptions text
-    agents_descriptions_text = ""
-    for agent_name, description in agents_descriptions.items():
-        agents_descriptions_text += f"- **{agent_name}**: {description}\n\n"
-
-    # Build the list of agents excluding the sender
-    recipients = [agent for agent in agents_descriptions.keys() if agent != sender]
-    recipients.append("User")  # Ensure 'User' is included
-    recipients_text = ", ".join(recipients)
-
-    prompt = f"""As the RouterAgent, your responsibility is to determine the next recipient (agent or user) of a message.
-
-User Preferences:
-{preferences_text}
-
-Conversation Context:
-{context}Sender: {sender}
-Message Content:
-\"\"\"
-{message_content}
-\"\"\"
-
-Agent Descriptions:
-{agents_descriptions_text}
-
-Instructions:
-- Based on the sender and message content, decide where the message should go next.
-- **Important:** Do not route the message back to the sender.
-- Choose one of the following recipients (excluding the sender): {recipients_text}.
-- Respond with your decision in the following JSON format:
-{{
-  "next_recipient": "<Agent name or 'User'>"
-}}
-
-Example response (if sender is '{sender}'):
-{{
-  "next_recipient": "RuleExpertAgent"
-}}
-"""
-    return prompt
 
 
-def assistant_agent_prompt(context, user_input):
+def create_campaign_prompt(user_input, user_preferences):
+    preferences_text = "\n".join(
+        [f"- {key}: {value}" for key, value in user_preferences.items()]
+    )
     return (
-        f"As the AssistantAgent, your role is to handle all out-of-character (OOC) responses and messages that do not fit well with other specialized agents.\n\n"
-        f"Conversation Context:\n{context}"
-        f'User\'s Input:\n"""\n{user_input}\n"""\n\n'
-        f"Instructions:\n"
-        f"- Provide a direct and helpful response to the user's OOC input.\n"
-        f"- Ensure responses are clear, concise, and maintain the game's serious tone.\n"
-        f"- Choose one of the following recipients: 'User', or another agent if appropriate.\n"
-        f"- Indicate who you are trying to send your message to by including 'next_recipient' in your response.\n"
-        f"- Respond in the following JSON format:\n"
+        f"As the DMAgent, your task is to create a **new campaign** that aligns with the user’s input and preferences. You will generate an initial storyline and provide the first response to start the campaign.\n\n"
+        f"**User Input:**\n{user_input}\n\n"
+        f"**User Preferences:**\n{preferences_text}\n\n"
+        f"**Instructions:**\n"
+        f"- **Storyline Generation:** Create a cohesive and engaging campaign storyline based on the user's input and preferences.\n"
+        f"- **First Response:** Provide a brief starting response for the user to begin their adventure.\n"
+        f"- **Maintain Alignment:** Ensure that the campaign's tone, theme, and difficulty are consistent with the preferences specified.\n"
+        f"- **Response Format:** Use **only** the JSON format provided below. If the response cannot be generated, return an empty JSON with placeholders.\n"
+        f"```json\n"
         f"{{\n"
-        f'  "next_recipient": "<Recipient name>",\n'
-        f'  "assistant_response": "<Your response here>"\n'
+        f'  "storyline": "<Generated storyline>",\n'
+        f'  "dm_response": "<Response to the user>"\n'
         f"}}\n"
-        f"\n"
-        f"Example response:\n"
-        f"{{\n"
-        f'  "next_recipient": "User",\n'
-        f'  "assistant_response": "I\'m here to assist you with any questions or issues you might have."\n'
-        f"}}\n"
+        f"```\n"
     )
 
 
-def rule_expert_prompt(context, user_input):
+def continue_campaign_prompt(context, previous_storyline, user_input, user_preferences):
+    preferences_text = "\n".join(
+        [f"- {key}: {value}" for key, value in user_preferences.items()]
+    )
     return (
-        f"As the RuleExpertAgent, your task is to determine if the user's intended action is allowed according to D&D "
-        f"rules and if the user is capable of performing it.\n\n"
-        f"Conversation Context:\n{context}"
-        f'User\'s Intended Action:\n"""\n{user_input}\n"""\n\n'
-        f"Instructions:\n"
-        f"- Analyze the user's action for rule compliance and capability.\n"
-        f"- Provide a response indicating whether the action is **exactly** 'allowed' or 'not allowed'.\n"
-        f"- Include any relevant rule explanations or requirements.\n"
-        f"- Choose one of the following recipients: 'DMAgent' or 'User'.\n"
-        f"- Indicate who you are trying to send your message to by including 'next_recipient' in your response.\n"
-        f"- Respond in the following JSON format:\n"
+        f"As the DMAgent, your task is to respond to the user's input while considering the ongoing campaign, user preferences, and previous events.\n\n"
+        f"**User Input:**\n{user_input}\n\n"
+        f"**Conversation Context:**\n{context}\n\n"
+        f"**Previous Storyline:**\n{previous_storyline}\n\n"
+        f"**User Preferences:**\n{preferences_text}\n\n"
+        f"**Instructions:**\n"
+        f"- **Respond to Input:** Answer user questions, narrate interactions, or extend the storyline as appropriate based on the user’s input.\n"
+        f"- **Narrate Consequences:** If the user takes an action, describe the consequences and how it affects the campaign environment or characters.\n"
+        f"- **Maintain Context:** Ensure that the response remains consistent with the previous storyline, user preferences, and current context.\n"
+        f"- **Adapt to User Actions:** While not every response needs to progress the campaign, ensure that it reflects user input and provides an engaging interaction.\n"
+        f"- **Response Format:** Provide the response in the exact JSON format below. If no storyline progression occurs, leave the storyline field as an empty string.\n"
+        f"```json\n"
         f"{{\n"
-        f'  "next_recipient": "<Recipient name>",\n'
-        f'  "action_allowed": "<allowed/not allowed>",\n'
-        f'  "rule_explanation": "<Your explanation here>"\n'
+        f'  "storyline": "<Continued storyline or leave empty>",\n'
+        f'  "dm_response": "<Response to the user>"\n'
         f"}}\n"
-        f"\n"
-        f"Example response:\n"
-        f"{{\n"
-        f'  "next_recipient": "DMAgent",\n'
-        f'  "action_allowed": "allowed",\n'
-        f'  "rule_explanation": "The user can attempt to jump across the ravine with a successful Athletics check."\n'
-        f"}}\n"
+        f"```\n"
     )
 
 
-def dm_agent_prompt(context, user_input):
+def validate_storyline_prompt(context, storyline, user_preferences):
+    preferences_text = "\n".join(
+        [f"- {key}: {value}" for key, value in user_preferences.items()]
+    )
     return (
-        f"As the DMAgent, your role is to interpret the player's action and respond directly to the player.\n\n"
-        f"Conversation Context:\n{context}"
-        f"Player's Action:\n{user_input}\n\n"
-        f"Instructions:\n"
-        f"- If the action is not permitted, inform the player why.\n"
-        f"- If the action is allowed, acknowledge the action and provide a brief summary.\n"
-        f"- Respond directly to the player with clear and concise information.\n"
-        f"- Respond in the following format:\n"
+        f"As the StorytellerAgent, your task is to validate the campaign storyline generated by the DMAgent, ensuring it aligns with the user's preferences and the current campaign context.\n\n"
+        f"**Conversation Context:**\n{context}\n\n"
+        f"**Storyline:**\n{storyline}\n\n"
+        f"**User Preferences:**\n{preferences_text}\n\n"
+        f"**Instructions:**\n"
+        f"- **Validate Storyline:** Ensure that the storyline aligns with the user’s preferences in terms of tone, genre, and progression. Confirm consistency with past events and narrative flow.\n"
+        f"- **Provide Constructive Feedback:** If any inconsistencies or gaps are identified, provide specific feedback to guide necessary revisions. Feedback should be actionable and focused on improving coherence or alignment with preferences.\n"
+        f"- **Response Format:** Provide feedback in the exact JSON format below. If everything is aligned, set consistency_check to 'Yes' and leave feedback empty.\n"
+        f"```json\n"
         f"{{\n"
-        f'  "dm_response": "<Your response to the player>"\n'
+        f'  "consistency_check": "<Yes/No>",\n'
+        f'  "feedback": "<Any issues or areas for revision or leave empty>"\n'
         f"}}\n"
-        f"\n"
-        f"Example response when the action is not allowed:\n"
-        f"{{\n"
-        f'  "dm_response": "You cannot fly across the canyon without wings or magic."\n'
-        f"}}\n"
-        f"\n"
-        f"Example response when the action is allowed:\n"
-        f"{{\n"
-        f'  "dm_response": "You leap across the ravine with a mighty jump."\n'
-        f"}}\n"
+        f"```\n"
     )
 
 
-def storyteller_prompt(context, dm_summary):
+def revise_campaign_prompt(context, feedback, user_preferences):
+    preferences_text = "\n".join(
+        [f"- {key}: {value}" for key, value in user_preferences.items()]
+    )
     return (
-        f"As the StorytellerAgent, provide a vivid narrative based on the user's action.\n\n"
-        f"Conversation Context:\n{context}"
-        f"DMAgent's Summary:\n{dm_summary}\n\n"
-        f"Instructions:\n"
-        f"- Continue the story with immersive descriptions.\n"
-        f"- Maintain consistency and engagement.\n"
-        f"- Address the user directly.\n"
-        f"- Set 'next_recipient' to 'User' as you are continuing the story for them.\n"
-        f"- Provide your narrative as 'storyteller_response'.\n"
-        f"- Respond in the following JSON format:\n"
+        f"As the DMAgent, you have received feedback from the StorytellerAgent regarding the campaign's storyline. Your task is to revise the storyline based on the feedback while considering the user’s preferences and input.\n\n"
+        f"**Conversation Context:**\n{context}\n\n"
+        f"**Storyteller Feedback:**\n{feedback}\n\n"
+        f"**User Preferences:**\n{preferences_text}\n\n"
+        f"**Instructions:**\n"
+        f"- **Revise Storyline:** Adjust the storyline based on the feedback, ensuring the changes align with user preferences and resolve the issues raised.\n"
+        f"- **Narrate the Outcome:** Provide a response that reflects the revised storyline and acknowledges any significant changes.\n"
+        f"- **Maintain Engagement:** Keep the user engaged with an interesting and consistent response, whether you are revising major events or making subtle adjustments.\n"
+        f"- **Ensure Coherence:** Ensure that the revised storyline continues to make sense within the overall narrative, and that it aligns with previous events and user preferences.\n"
+        f"- **Response Format:** Provide the revised storyline in the JSON format below. If there are no major changes to the storyline, leave the revised_storyline field empty.\n"
+        f"```json\n"
         f"{{\n"
-        f'  "next_recipient": "User",\n'
-        f'  "storyteller_response": "<Your narrative here>"\n'
+        f'  "revised_storyline": "<Revised campaign storyline or leave empty>",\n'
+        f'  "dm_response": "<Response to the user after revision>"\n'
         f"}}\n"
-        f"\n"
-        f"Example response:\n"
-        f"{{\n"
-        f'  "next_recipient": "User",\n'
-        f'  "storyteller_response": "As you leap across the ravine, the wind whistles past your ears..."\n'
-        f"}}\n"
+        f"```\n"
     )
 
 
-def agent_feedback_prompt(agent_name, error_message, original_prompt):
+def format_feedback_prompt(agent_name):
     return (
-        f"As the {agent_name}, there was an issue with your previous response.\n"
-        f"Error: {error_message}\n\n"
-        f"Please review your response and correct it according to the instructions.\n"
-        f"Remember:\n"
-        f"- Follow the instructions carefully.\n"
-        f"- Ensure your response is in the correct format.\n"
-        f"- Do not include any disallowed content.\n"
-        f"- Indicate who you are trying to send your message to by including 'next_recipient' in your response.\n\n"
-        f"---\n"
-        f'Original Prompt:\n"""\n{original_prompt}\n"""\n'
+        f"Error: The last response from {agent_name} could not be parsed due to incorrect formatting.\n\n"
+        f"Please resend the response in proper JSON format, ensuring all required fields are included.\n"
+        f"Do not include any extra greetings or apologies. Resend your response with the proper formatting.\n"
+        f"```json\n"
+        f"{{\n"
+        f'  "key": "value",\n'
+        f"}}\n"
+        f"```"
+    )
+
+
+def feedback_missing_storyline(agent_name):
+    return (
+        f"Error: The last response from {agent_name} did not include a storyline.\n\n"
+        f"Please ensure that every response contains a valid storyline, even if no major events occur. Summarize the current situation or provide minor narrative details to maintain the flow of the campaign.\n"
+        f"Resend your response in proper JSON format, ensuring the 'storyline' field is filled.\n"
+        f"```json\n"
+        f"{{\n"
+        f'  "storyline": "<A brief summary or continuation of the campaign>",\n'
+        f'  "dm_response": "<Response to the user>"\n'
+        f"}}\n"
+        f"```"
+    )
+
+
+def feedback_inconsistent_storyline(agent_name, issue_details):
+    return (
+        f"The last storyline from {agent_name} contains inconsistencies with the current campaign or user preferences.\n\n"
+        f"**Issue Details:**\n{issue_details}\n\n"
+        f"Please revise the storyline to resolve these inconsistencies. Ensure that the tone, genre, and progression remain consistent with the user's preferences, and that the storyline logically follows the previous events.\n"
+        f"Resend your response in the proper format below.\n"
+        f"```json\n"
+        f"{{\n"
+        f'  "revised_storyline": "<Corrected storyline>",\n'
+        f'  "dm_response": "<Response to the user>"\n'
+        f"}}\n"
+        f"```"
     )

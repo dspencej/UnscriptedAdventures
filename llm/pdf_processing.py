@@ -1,15 +1,12 @@
-# llm/pdf_processing.py
-
 import os
-
-from PyPDF2 import PdfReader
-from sentence_transformers import SentenceTransformer
 
 import chromadb
 from chromadb.utils import embedding_functions
+from PyPDF2 import PdfReader
+from sentence_transformers import SentenceTransformer
 
 
-def process_pdfs(docs_path, chroma_db_path, embedding_model_name):
+def process_pdfs(docs_path, chroma_db_path, collection_name, embedding_model_name):
     # Initialize ChromaDB client
     client = chromadb.PersistentClient(path=chroma_db_path)
 
@@ -19,11 +16,12 @@ def process_pdfs(docs_path, chroma_db_path, embedding_model_name):
         model_name=embedding_model_name
     )
 
+    # Create or get the collection for the specified agent
     collection = client.get_or_create_collection(
-        name="dnd_rules", embedding_function=embedding_function
+        name=collection_name, embedding_function=embedding_function
     )
 
-    # Process PDFs
+    # Process PDFs in the given directory
     for filename in os.listdir(docs_path):
         if filename.endswith(".pdf"):
             pdf_path = os.path.join(docs_path, filename)
@@ -42,12 +40,34 @@ def process_pdfs(docs_path, chroma_db_path, embedding_model_name):
 
 
 if __name__ == "__main__":
-    DOCS_PATH = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), "..", "resources")
+    # Paths for DM and Storyteller resources
+    DM_DOCS_PATH = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "resources", "dm_resources")
     )
-    CHROMA_DB_PATH = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), "..", "chromadb")
+    STORYTELLING_DOCS_PATH = os.path.abspath(
+        os.path.join(
+            os.path.dirname(__file__), "..", "resources", "storytelling_resources"
+        )
     )
-    EMBEDDING_MODEL = "all-MiniLM-L6-v2"  # Or any other supported model
 
-    process_pdfs(DOCS_PATH, CHROMA_DB_PATH, EMBEDDING_MODEL)
+    # ChromaDB paths
+    DM_CHROMA_DB_PATH = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "chromadb_dm")
+    )
+    STORYTELLING_CHROMA_DB_PATH = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "chromadb_st")
+    )
+
+    # Embedding model
+    EMBEDDING_MODEL = "all-MiniLM-L6-v2"
+
+    # Process PDFs for the DM agent
+    process_pdfs(DM_DOCS_PATH, DM_CHROMA_DB_PATH, "dm_actions", EMBEDDING_MODEL)
+
+    # Process PDFs for the Storyteller agent
+    process_pdfs(
+        STORYTELLING_DOCS_PATH,
+        STORYTELLING_CHROMA_DB_PATH,
+        "story_descriptions",
+        EMBEDDING_MODEL,
+    )

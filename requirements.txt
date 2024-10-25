@@ -14,3 +14,9 @@ portalocker==2.10.1
 pypdf==5.0.1
 flaml[automl]==2.3.1
 ruff==0.7.0
+
+ipython==8.29.0
+markdownify==0.13.1
+requests==2.32.3
+urllib3==2.2.3
+PyPDF2==3.0.1

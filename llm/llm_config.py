@@ -2,8 +2,8 @@
 import os
 
 # Select LLM provider: 'ollama' or 'opal'
-LLM_PROVIDER = "ollama"
-# LLM_PROVIDER = "opal"
+# LLM_PROVIDER = "ollama"
+LLM_PROVIDER = "opal"
 
 # Common LLM configuration
 OLLAMA_MODEL = "mistral:v0.3"  # Replace with the desired model in Ollama
@@ -31,7 +31,7 @@ elif LLM_PROVIDER == "opal":
     CONFIG_LIST = [
         {
             "model": OPAL_MODEL,
-            "model_client_cls": "CustomOpalModelClient",
+            "model_client_cls": "CustomModelClient",
             "api_key": OPAL_API_KEY,
             "api_url": OPAL_API_URL,
             "is_cui": False,
