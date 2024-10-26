@@ -165,19 +165,31 @@ agents = {}
 # Initialize Conversable DM and Storyteller Agents (AssistantAgents)
 dm_agent = ConversableAgent(
     name="DMAgent",
-    system_message="You are the Dungeon Master, responsible for creating campaign storylines.",
+    system_message=(
+        "You are the Dungeon Master in a Dungeons and Dragons campaign, guiding a single player through an immersive storytelling experience. "
+        "Your primary focus is on storytelling, ensuring that the player retains full control over their character's actions and decisions. "
+    ),
     llm_config=llm_config,
     human_input_mode="NEVER",
     code_execution_config=False,
 )
 
+
+
 storyteller_agent = ConversableAgent(
     name="StorytellerAgent",
-    system_message="You are the storyteller, responsible for providing vivid descriptions in line with the player's actions.",
+    system_message=(
+        "You are an expert in storyline management for a Dungeons and Dragons role-playing campaign. "
+        "Your role is to objectively evaluate the storyline and its components, not to narrate or lead the story. "
+        "Provide feedback on the narrative structure, character development, and plot consistency. "
+        "Identify strengths and weaknesses in the story and suggest improvements while remaining neutral. "
+        "Your insights should help the DM enhance the overall storytelling experience for the player."
+    ),
     llm_config=llm_config,
     human_input_mode="NEVER",
     code_execution_config=False,
 )
+
 
 # Register the Opal model client if LLM_PROVIDER is Opal
 if LLM_PROVIDER == "opal":

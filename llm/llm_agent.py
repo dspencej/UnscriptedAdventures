@@ -10,6 +10,7 @@ import re  # For extracting JSON
 from typing import Any, Dict, List, Optional
 
 import urllib3
+from colorama import Fore, Style
 
 from llm.agents import dm_agent, storyteller_agent
 from llm.prompts import (
@@ -64,72 +65,65 @@ async def parse_response(agent_name: str, response: str) -> Optional[Dict[str, A
     """
     Attempts to extract and parse a JSON object from a text response.
     """
-    logger.debug(f"Parsing response from {agent_name}: {response}")
+    logger.debug(f"{Fore.MAGENTA}Parsing response from {Fore.BLUE}{agent_name}: {Fore.GREEN}{response}{Style.RESET_ALL}")
 
     try:
         json_str = extract_json_from_text(response)
-        logger.debug(f"Extracted JSON string from {agent_name}: {json_str}")
 
         if json_str:
             parsed_json = json.loads(json_str)
-            logger.debug(f"Successfully parsed JSON response from {agent_name}.")
+            logger.debug(f"{Fore.MAGENTA}Parsed JSON response from {Fore.BLUE}{agent_name}: {Fore.GREEN}{parsed_json}{Style.RESET_ALL}")
             return parsed_json
         else:
             logger.error(
-                f"No valid JSON found in response from {agent_name}. Returning raw response."
+                f"{Fore.RED}No valid JSON found in response from {agent_name}. Using raw response.{Style.RESET_ALL}"
             )
             return {"raw_response": response}
     except (json.JSONDecodeError, TypeError) as e:
-        logger.error(f"Failed to parse JSON from {agent_name}. Error: {e}")
+        logger.error(f"{Fore.RED}Failed to parse JSON from {agent_name}. Error: {e}{Style.RESET_ALL}")
         return None
 
 
 async def send_feedback_and_retry(
-    agent_name: str, expected_keys: List[str], issue: Optional[str] = None
+    agent_name: str, expected_keys: List[str], response: str
 ) -> Optional[List[Any]]:
     """
     Sends feedback to the agent and attempts to retrieve a corrected response.
 
-    Args:
-        agent_name (str): The name of the agent sending the response.
-        expected_keys (list): The keys expected in the corrected response JSON.
-        issue (str): A specific issue, if any (e.g., missing storyline, inconsistency).
-
-    Returns:
-        list or None: Extracted values from the corrected response, or None if feedback fails.
+    :param agent_name: The name of the agent sending the response.
+    :param expected_keys: The keys expected in the corrected response JSON.
+    :param response: The original response from the agent.
     """
-    # Trigger specific feedback based on the issue
-    if issue == "missing_storyline":
-        feedback_msg = feedback_missing_storyline(agent_name)
-    elif issue == "inconsistent_storyline":
-        feedback_msg = feedback_inconsistent_storyline(
-            agent_name, "Storyline lacks consistency."
-        )
-    else:
-        # Default feedback for invalid format or general issue
-        feedback_msg = format_feedback_prompt(agent_name)
 
-    logger.debug(f"Sending feedback to {agent_name}: {feedback_msg}")
+    feedback_msg = format_feedback_prompt(expected_keys, response)
+
+    logger.debug(f"{Fore.MAGENTA}Sending feedback to {Fore.BLUE}{agent_name}: {Fore.MAGENTA}{feedback_msg}{Style.RESET_ALL}")
     agent = AGENTS.get(agent_name)
 
     if not agent:
-        logger.error(f"Agent '{agent_name}' not found.")
+        logger.error(f"{Fore.RED}Agent '{agent_name}' not found.{Style.RESET_ALL}")
         return None
 
     feedback_response = await agent.generate_reply(feedback_msg)
 
-    logger.debug(f"Raw feedback response from {agent_name}: {feedback_response}")
+    logger.debug(f"{Fore.MAGENTA}Raw feedback response from {Fore.BLUE}{agent_name}: {Fore.GREEN}{feedback_response}{Style.RESET_ALL}")
     parsed_feedback = await parse_response(agent_name, feedback_response)
 
-    if parsed_feedback and isinstance(
-        parsed_feedback, dict
-    ):  # Ensure it's a dictionary
-        extracted = [parsed_feedback.get(key) for key in expected_keys]
-        logger.debug(f"Extracted {expected_keys} from feedback response.")
+    if parsed_feedback and isinstance(parsed_feedback, dict):
+        # Extract values for the expected keys
+        extracted = [parsed_feedback.get(key) for key in expected_keys if key in parsed_feedback]
+
+        # Check if all extracted values are None (i.e., expected keys are missing)
+        if not any(extracted) and "raw_response" in parsed_feedback:
+            raw_response = parsed_feedback["raw_response"]
+            extracted.append(raw_response)
+            logger.debug(f"{Fore.MAGENTA}Added 'raw_response' to extracted as a fallback.{Style.RESET_ALL}")
+
+        logger.debug(f"{Fore.MAGENTA}Extracted values: {Fore.BLUE}{extracted}{Style.RESET_ALL}")
         return extracted
     else:
         logger.error(
-            f"Failed to parse feedback response from {agent_name}. Feedback response: {parsed_feedback}"
+            f"{Fore.RED}Invalid feedback format from {agent_name}. Feedback response: {parsed_feedback}"
         )
         return None
 
@@ -147,59 +141,47 @@ async def get_agent_response(
     """
     agent = AGENTS.get(agent_name)
     if not agent:
-        logger.error(f"Agent '{agent_name}' not found.")
+        logger.error(f"{Fore.RED}Agent '{agent_name}' not found.{Style.RESET_ALL}")
         return None
 
     retries = 0
     while retries < max_retries:
+        response = ""
         try:
             logger.debug(
-                f"Attempt {retries + 1}/{max_retries} - Sending prompt to {agent_name}"
+                f"{Fore.MAGENTA}Attempt {retries + 1}/{max_retries} - Sending prompt to {Fore.BLUE}{agent_name}: {Fore.MAGENTA}{prompt}{Style.RESET_ALL}"
             )
             response = agent.generate_reply(messages=prompt)
 
-            if hasattr(response, "__await__"):  # Check if it's awaitable
+            if hasattr(response, "__await__"):
                 response = await response
 
-            logger.debug(f"Raw response from {agent_name}: {response}")
+            logger.debug(f"{Fore.MAGENTA}Raw response from {Fore.BLUE}{agent_name}: {Fore.GREEN}{response}{Style.RESET_ALL}")
 
             # Ensure response is correctly parsed as JSON
             parsed_response = await parse_response(agent_name, response)
 
-            if parsed_response and isinstance(
-                parsed_response, dict
-            ):  # Check if parsed response is a dict
-                extracted = [
-                    parsed_response.get(key, "") for key in expected_keys
-                ]  # Get keys or return empty strings
-                logger.debug(
-                    f"Successfully extracted {expected_keys} from {agent_name} response: {extracted}"
-                )
-                return extracted
-            else:
-                logger.warning(
-                    f"Failed to parse response from {agent_name}. Attempt {retries + 1}/{max_retries}"
-                )
+            return parsed_response
 
         except Exception as e:
             logger.error(
-                f"Exception during response handling from {agent_name} on attempt {retries + 1}. Error: {e}"
+                f"{Fore.RED}Exception during response handling from {agent_name} on attempt {retries + 1}. Error: {e}{Style.RESET_ALL}"
             )
 
         retries += 1
-        logger.debug(f"Retrying after feedback, attempt {retries}/{max_retries}")
-        extracted = await send_feedback_and_retry(agent_name, expected_keys)
+        logger.debug(f"{Fore.MAGENTA}Sending feedback and trying again.{Style.RESET_ALL}")
+        extracted = await send_feedback_and_retry(agent_name, expected_keys, response)
 
         if extracted:
             logger.debug(
-                f"Successfully extracted {expected_keys} from feedback response on attempt {retries}"
+                f"{Fore.MAGENTA}Successfully extracted {Fore.BLUE}{expected_keys}.{Style.RESET_ALL}"
             )
             return extracted
         else:
-            logger.warning(f"Feedback retry failed on attempt {retries}/{max_retries}")
+            logger.warning(f"{Fore.YELLOW}Feedback retry failed on attempt {retries}/{max_retries}{Style.RESET_ALL}")
 
     logger.error(
-        f"Max retries reached for {agent_name}. Could not parse the response after {max_retries} attempts."
+        f"{Fore.RED}Max retries reached for {agent_name}. Could not parse the response after {max_retries} attempts.{Style.RESET_ALL}"
     )
     return None
 
@@ -273,32 +255,27 @@ async def handle_inconsistent_storyline(
     retries = 0
     while retries < max_retries:
         logger.debug(
-            f"Handling inconsistent storyline, attempt {retries + 1}/{max_retries}"
+            f"{Fore.MAGENTA}Handling inconsistent storyline, attempt {retries + 1}/{max_retries}{Style.RESET_ALL}"
         )
         revised_response = await get_agent_response(
             "DMAgent", dm_prompt, ["revised_storyline", "dm_response"]
         )
 
-        if revised_response and revised_response[0]:
-            return revised_response[1]
+        # Check if revised_response contains the expected keys or fallback to "raw_response"
+        if revised_response and isinstance(revised_response, dict):
+            revised_storyline = revised_response.get("revised_storyline") or revised_response.get("raw_response") or ""
+            dm_response_text = revised_response.get("dm_response") or revised_response.get("raw_response") or ""
+        else:
+            revised_storyline = ""
+            dm_response_text = ""
+
+        if dm_response_text:
+            return revised_storyline
 
         retries += 1
-        logger.error(
-            f"Failed to parse revised storyline from DMAgent (Attempt {retries}/{max_retries}). Sending feedback."
-        )
-
-        feedback_msg = feedback_inconsistent_storyline(
-            "DMAgent", "The storyline has inconsistencies."
-        )
-        feedback_response = await get_agent_response(
-            "DMAgent", feedback_msg, ["revised_storyline", "dm_response"]
-        )
-
-        if feedback_response and feedback_response[0]:
-            return feedback_response[1]
 
     logger.error(
-        "Max retries reached for handling inconsistent storyline. Could not parse the response."
+        f"{Fore.RED}Max retries reached for handling inconsistent storyline. Could not parse the response.{Style.RESET_ALL}"
     )
     return "Failed to resolve inconsistencies after multiple attempts. Please adjust your input and try again."
 
@@ -324,25 +301,35 @@ async def generate_gm_response(
         storyline = ""
 
     if is_new_campaign:
-        logger.debug("Starting a new campaign.")
+        logger.debug(f"{Fore.MAGENTA}Starting a new campaign.")
         dm_prompt_content = create_campaign_prompt(user_input, user_preferences)
         dm_prompt = [{"role": "DMAgent", "content": dm_prompt_content}]
 
         dm_response = await get_agent_response(
             "DMAgent", dm_prompt, ["dm_response", "storyline"]
         )
+        logger.debug(f"{Fore.MAGENTA}DM Agent response:\n{Fore.GREEN}{dm_response}{Style.RESET_ALL}")
         if not dm_response:
+            logger.warning(f"{Fore.YELLOW}No DM Agent response found.{Style.RESET_ALL}")
+            return {
+                "dm_response": "Error starting a new campaign.",
+                "full_storyline": storyline,
+            }
+        # Check if dm_response contains expected keys, else fallback to "raw_response"
+        if isinstance(dm_response, dict):
+            dm_response_text = dm_response.get("dm_response") or dm_response.get("raw_response") or ""
+            new_storyline = dm_response.get("storyline") or dm_response.get("raw_response") or ""
+        else:
+            logger.error(f"{Fore.RED}Could not generate campaign. Unknown error.{Style.RESET_ALL}")
             return {
                 "dm_response": "Error starting a new campaign.",
                 "full_storyline": storyline,
             }
 
-        new_storyline = dm_response[1] or ""  # Accept an empty storyline
-        storyline += new_storyline
-        dm_response_text = dm_response[0]
+        logger.debug(f"{Fore.MAGENTA}New Storyline: {new_storyline}")
 
         storyteller_prompt_content = validate_storyline_prompt(
-            context, storyline, user_preferences
+            context, new_storyline, user_preferences
         )
         storyteller_prompt = [
             {"role": "StorytellerAgent", "content": storyteller_prompt_content}
@@ -352,26 +339,49 @@ async def generate_gm_response(
             "StorytellerAgent", storyteller_prompt, ["consistency_check", "feedback"]
         )
 
-        if storyteller_response and storyteller_response[0] == "Yes":
-            return {"dm_response": dm_response_text, "full_storyline": storyline}
+        # Only proceed with feedback handling if expected keys are present
+        if (
+                storyteller_response
+                and isinstance(storyteller_response, dict)
+                and "consistency_check" in storyteller_response
+                and "feedback" in storyteller_response
+        ):
+            if storyteller_response["consistency_check"] == "Yes":
+                storyline += new_storyline
+                return {"dm_response": dm_response_text, "full_storyline": storyline}
+            else:
+                feedback = storyteller_response["feedback"]
+                dm_inconsistency_prompt_content = revise_campaign_prompt(
+                    context, new_storyline, feedback, user_preferences
+                )
+                dm_inconsistency_prompt = [
+                    {"role": "DMAgent", "content": dm_inconsistency_prompt_content}
+                ]
+
+                # Get the response from handle_inconsistent_storyline
+                dm_revision_response = await handle_inconsistent_storyline(dm_inconsistency_prompt)
+
+                # Check if dm_revision_response contains expected keys, else fallback to "raw_response"
+                if isinstance(dm_revision_response, dict):
+                    revised_storyline = dm_revision_response.get("revised_storyline") or dm_revision_response.get(
+                        "raw_response") or ""
+                    dm_revision_text = dm_revision_response.get("dm_response") or dm_revision_response.get(
+                        "raw_response") or ""
+                else:
+                    revised_storyline = ""
+                    dm_revision_text = ""
+
+                # Append revised storyline if available
+                storyline += revised_storyline
+
+                return {
+                    "dm_response": dm_revision_text or "Error in processing the revision response.",
+                    "full_storyline": storyline,
+                }
+
         else:
-            feedback = (
-                storyteller_response[1]
-                if storyteller_response
-                else "No feedback provided."
-            )
-            dm_inconsistency_prompt_content = revise_campaign_prompt(
-                context, feedback, user_preferences
-            )
-            dm_inconsistency_prompt = [
-                {"role": "DMAgent", "content": dm_inconsistency_prompt_content}
-            ]
-            return {
-                "dm_response": await handle_inconsistent_storyline(
-                    dm_inconsistency_prompt
-                ),
-                "full_storyline": storyline,
-            }
+            storyline += new_storyline
+            return {"dm_response": dm_response_text, "full_storyline": storyline}
 
     else:
         logger.debug("Ongoing campaign detected.")
@@ -379,7 +389,7 @@ async def generate_gm_response(
         if not storyline:
             return {
                 "dm_response": "Error continuing the campaign. No storyline found.",
-                "full_storyline": None,
+                "full_storyline": "",
             }
 
         dm_continue_prompt_content = continue_campaign_prompt(

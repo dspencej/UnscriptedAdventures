@@ -6,7 +6,7 @@ LLM_PROVIDER = "ollama"
 # LLM_PROVIDER = "opal"
 
 # Common LLM configuration
-OLLAMA_MODEL = "mistral:v0.3"  # Replace with the desired model in Ollama
+OLLAMA_MODEL = "llama3:latest"
 OLLAMA_BASE_URL = "http://localhost:11434/v1"  # Default Ollama API endpoint
 OLLAMA_API_KEY = "ollama"
 
