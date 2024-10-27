@@ -166,8 +166,7 @@ agents = {}
 dm_agent = ConversableAgent(
     name="DMAgent",
     system_message=(
-        "You are the Dungeon Master in a Dungeons and Dragons campaign, guiding a single player through an immersive storytelling experience. "
-        "Your primary focus is on storytelling, ensuring that the player retains full control over their character's actions and decisions. "
+        "You are the Dungeon Master in a Dungeons and Dragons campaign, guiding a single player through an immersive storytelling experience."
     ),
     llm_config=llm_config,
     human_input_mode="NEVER",

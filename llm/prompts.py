@@ -1,28 +1,32 @@
 # llm/prompts.py
 
-def create_campaign_prompt(user_input, user_preferences):
+def create_campaign_prompt(user_preferences):
     preferences_text = "\n".join(
         [f"- {key}: {value}" for key, value in user_preferences.items()]
     )
     return (
-        f"Your task is to start a new storyline that aligns with the user's game style preferences.\n"
-        f"Do not ask the user for input on the campaign. Instead, use the preferences below to craft a new story for the player.\n"
-        f"Narrate the scene and respond to the user's actions and decisions.\n\n"
-        f"**User Input:**\n{user_input}\n\n"
+        f"You are the Dungeon Master of a character-driven, high-fantasy Dungeons & Dragons 5th Edition campaign. "
+        f"Design an original, immersive storyline that deeply engages the player’s preferred game style.\n\n"
         f"**User Preferences:**\n{preferences_text}\n\n"
         f"**Instructions:**\n"
-        f"- **Storyline Generation:** Craft a cohesive and engaging campaign storyline based on the user's preferences.\n"
-        f"  - Match the tone, theme, and difficulty with user preferences (e.g., dark fantasy, high-stakes adventure).\n\n"
-        f"- **Starting Scene Creation:** Create a vivid opening scene description that immerses players.\n"
-        f"  - Include sensory details (sights, sounds, smells) to enhance the atmosphere.\n"
-        f"  - Present a clear environment without dictating the player's choices or tasks.\n\n"
-        f"- **Consistency:** Ensure all campaign elements (tone, pacing, difficulty) align with user preferences.\n\n"
-        f"- Do not introduce yourself. They know that you are the DM.\n\n"
-        f"- **Response Format:** Output should be in JSON format, without introductory text. Follow this structure:\n\n"
+        f"- **Role & Tone:** Act as a narrator, providing descriptions and events in a style that matches the player’s preferred tone (e.g., serious, heroic, whimsical).\n\n"
+        f"- **World Building:** Create an intricate, high-fantasy setting filled with mysteries, conflicts, and wonders.\n"
+        f"  - Develop a primary quest that introduces challenges aligning with the user's preferences.\n"
+        f"  - Include side plots that provide opportunities for exploration, character development, and player agency.\n\n"
+        f"- **Immersive Descriptions:** Start with a vivid opening scene, rich with sensory details (sights, sounds, smells) to set the campaign's mood.\n"
+        f"  - Describe locations in 3-5 sentences, covering atmosphere, notable landmarks, and any nearby NPCs or creatures.\n"
+        f"  - Each scene should allow player-driven decisions without imposing actions or objectives.\n\n"
+        f"- **NPCs:**\n"
+        f"  - Create NPCs with distinct personalities, motivations, and goals that could reveal secrets, alliances, or conflicts over time.\n"
+        f"  - Use unique voices or subtle dialects for significant NPCs to enhance immersion.\n\n"
+        f"- **Player Choices:** Present five narrative-aligned actions with clear but open-ended possibilities.\n"
+        f"  - One action should be a surprising, risky, or comedic option fitting the scene.\n\n"
+        f"- **Response Format:**\n"
+        f"  - Provide output in JSON format with the following structure:\n\n"
         f"```json\n"
         f"{{\n"
-        f'  "storyline": "<Generated campaign storyline>",\n'
-        f'  "dm_response": "<Initial scene description without player tasks>"\n'
+        f'  "storyline": "<Campaign story overview>",\n'
+        f'  "dm_response": "<Detailed scene description>"\n'
         f"}}\n"
         f"```"
     )
@@ -34,21 +38,23 @@ def continue_campaign_prompt(context, previous_storyline, user_input, user_prefe
         [f"- {key}: {value}" for key, value in user_preferences.items()]
     )
     return (
-        f"Your task is to respond to the user's input while considering the ongoing campaign and user preferences.\n\n"
+        f"You are the Dungeon Master in a detailed, ongoing D&D 5th Edition campaign.\n"
+        f"Craft the next scene based on the user’s input and game style preferences without compromising immersion.\n\n"
         f"**User Input:**\n{user_input}\n\n"
-        f"**Conversation Context:**\n{context}\n\n"
+        f"**Context:**\n{context}\n\n"
         f"**Previous Storyline:**\n{previous_storyline}\n\n"
         f"**User Preferences:**\n{preferences_text}\n\n"
         f"**Instructions:**\n"
-        f"- **Respond to Input:** Address the user's questions and narrate interactions based on their input.\n"
-        f"- **Narrate Consequences:** Describe the consequences of user actions and their impact on the campaign.\n"
-        f"- **Maintain Context:** Ensure responses align with the previous storyline, user preferences, and context.\n"
-        f"- **Adapt to User Actions:** Responses should reflect user input, enhancing engagement without always progressing the storyline.\n"
-        f"- **Response Format:** Provide the response in JSON format. If no storyline progression is needed, leave the storyline field empty:\n"
+        f"- **Narrate Responses:** Describe the outcomes of the user’s choices, keeping the tone aligned with the campaign theme (e.g., dark, adventurous, humorous).\n\n"
+        f"- **Environment & NPC Interactions:** Expand on settings as the player explores. Describe NPC responses based on personalities, motivations, and context.\n"
+        f"  - Introduce hints of NPC backstories if it aligns with the player's actions.\n\n"
+        f"- **Present Player Choices:** Offer five options that respect the user’s preferred gameplay and character-driven storytelling style.\n"
+        f"  - Include actions that vary in outcome (e.g., cautious, bold, strategic, humorous).\n\n"
+        f"- **Response Format:** Provide output in JSON format:\n\n"
         f"```json\n"
         f"{{\n"
-        f'  "storyline": "<Continued storyline or leave empty>",\n'
-        f'  "dm_response": "<Response to the user>"\n'
+        f'  "storyline": "<Optional storyline continuation>",\n'
+        f'  "dm_response": "<Narrative response to user input>"\n'
         f"}}\n"
         f"```"
     )
@@ -59,19 +65,18 @@ def validate_storyline_prompt(context, storyline, user_preferences):
         [f"- {key}: {value}" for key, value in user_preferences.items()]
     )
     return (
-        f"The Dungeon Master has provided a storyline progression for the campaign. Your task is to validate this storyline based on user preferences and context.\n"
-        f"Ensure the storyline is self-consistent.\n\n"
-        f"**Conversation Context:**\n{context}\n\n"
+        f"Check the campaign storyline against user’s preferences for accuracy, style, and coherence with previous events.\n\n"
+        f"**Context:**\n{context}\n\n"
         f"**Storyline:**\n{storyline}\n\n"
         f"**User Preferences:**\n{preferences_text}\n\n"
         f"**Instructions:**\n"
-        f"- **Evaluate the Storyline:** Check for alignment with user preferences regarding tone, genre, and progression. Ensure consistency with past events.\n"
-        f"- **Provide Constructive Feedback:** If inconsistencies are found, offer specific, actionable feedback to guide revisions, focusing on coherence and alignment with preferences.\n"
-        f"- **Response Format:** Your feedback should be in JSON format. If no adjustments are needed, set `consistency_check` to 'Yes' and leave `feedback` empty:\n"
+        f"- **Ensure Alignment:** Confirm storyline maintains consistency with user preferences and previous campaign context.\n"
+        f"- **Provide Feedback:** Identify any areas where adjustments might improve alignment with the user's preferences.\n\n"
+        f"**Feedback Format:**\n\n"
         f"```json\n"
         f"{{\n"
         f'  "consistency_check": "<Yes/No>",\n'
-        f'  "feedback": "<Any issues or areas for revision or leave empty>"\n'
+        f'  "feedback": "<Detailed feedback if needed>"\n'
         f"}}\n"
         f"```"
     )
@@ -83,23 +88,23 @@ def revise_campaign_prompt(context, storyline, feedback, user_preferences):
         [f"- {key}: {value}" for key, value in user_preferences.items()]
     )
     return (
-        f"You have received feedback on the campaign's storyline. Your task is to revise it based on this feedback while considering user preferences.\n\n"
-        f"**Conversation Context:**\n{context}\n\n"
-        f"**Storyline Feedback:**\n{feedback}\n\n"
+        f"Revise the storyline to incorporate feedback and ensure alignment with the user's preferences.\n\n"
+        f"**Context:**\n{context}\n\n"
+        f"**Feedback:**\n{feedback}\n\n"
+        f"**Storyline:**\n{storyline}\n\n"
         f"**User Preferences:**\n{preferences_text}\n\n"
-        f"**Storyline to Revise:**\n{storyline}\n\n"
         f"**Instructions:**\n"
-        f"- **Revise the Storyline:** Make adjustments according to the feedback, ensuring they align with user preferences and address the issues raised.\n"
-        f"- **Maintain Engagement:** Craft an engaging response, whether through major changes or subtle adjustments, to keep the user invested.\n"
-        f"- **Ensure Coherence:** Verify that the revised storyline remains logical within the overall narrative, connecting seamlessly with past events and user preferences.\n"
-        f"- **Response Format:** Provide the revised storyline in JSON format. This format is crucial:\n"
+        f"- **Adjust Storyline:** Revise any parts noted in the feedback to fit user preferences.\n"
+        f"- **Maintain Continuity:** Ensure continuity with previous events and create immersive, consistent gameplay.\n\n"
+        f"**Response Format:**\n\n"
         f"```json\n"
         f"{{\n"
-        f'  "revised_storyline": "<Revised campaign storyline or leave empty>",\n'
-        f'  "dm_response": "<Response to the user after revision>"\n'
+        f'  "revised_storyline": "<Updated storyline>",\n'
+        f'  "dm_response": "<Narrative response to user after revision>"\n'
         f"}}\n"
         f"```"
     )
+
 
 
 def format_feedback_prompt(expected_keys, response):
