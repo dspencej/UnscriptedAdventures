@@ -416,9 +416,12 @@ def delete_character(character_id):
         character = db.session.get(Character, character_id)
 
         if character:
-            # Check if the character is currently in the session and clear it if necessary
-            current_character = session.get("current_character")
-            if current_character and current_character["id"] == character.id:
+            # Retrieve and log current character details for debugging
+            current_character = session.get("current_character", {})
+            app.logger.debug(f"Current character in session: {current_character}")
+
+            # Check if the current character in session matches the one being deleted
+            if current_character and current_character.get("id") == character.id:
                 session.pop("current_character", None)  # Remove character from session
                 app.logger.debug(
                     f"{Fore.MAGENTA}Cleared current character {character.name} from session{Style.RESET_ALL}"
@@ -439,6 +442,7 @@ def delete_character(character_id):
     except Exception as e:
         app.logger.error(f"{Fore.RED}Error deleting character: {e}{Style.RESET_ALL}")
         return jsonify({"status": "error", "message": "Error deleting character."}), 500
+
 
 
 @app.route("/save_current_character", methods=["POST"])

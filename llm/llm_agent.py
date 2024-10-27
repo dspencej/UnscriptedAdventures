@@ -91,12 +91,12 @@ async def parse_response(agent_name: str, response: str) -> Optional[Dict[str, A
 
 async def send_feedback_and_retry(
     agent_name: str, expected_keys: List[str], response: str
-) -> Optional[List[Any]]:
+) -> Optional[dict]:
     """
     Sends feedback to the agent and attempts to retrieve a corrected response.
     """
     # Generate the feedback message content
-    feedback_msg_content = format_feedback_prompt(expected_keys, response)
+    feedback_msg_content = format_feedback_prompt(expected_keys)
 
     # Format the feedback prompt with 'system' role to instruct the agent
     feedback_prompt = [{"role": "system", "content": feedback_msg_content}]
@@ -127,21 +127,11 @@ async def send_feedback_and_retry(
     parsed_feedback = await parse_response(agent_name, feedback_response)
 
     if parsed_feedback and isinstance(parsed_feedback, dict):
-        extracted = [
-            parsed_feedback.get(key) for key in expected_keys if key in parsed_feedback
-        ]
-
-        if not any(extracted) and "raw_response" in parsed_feedback:
-            raw_response = parsed_feedback["raw_response"]
-            extracted.append(raw_response)
-            logger.debug(
-                f"{Fore.MAGENTA}[FALLBACK] Added 'raw_response' to extracted values.{Style.RESET_ALL}"
-            )
-
+        # Return the parsed feedback directly instead of extracted keys
         logger.debug(
-            f"{Fore.MAGENTA}[EXTRACTED] Values extracted: {Fore.BLUE}{extracted}{Style.RESET_ALL}"
+            f"{Fore.MAGENTA}[PARSED FEEDBACK] Parsed feedback returned: {Fore.BLUE}{parsed_feedback}{Style.RESET_ALL}"
         )
-        return extracted
+        return parsed_feedback
     else:
         logger.error(
             f"{Fore.RED}[ERROR] Invalid feedback format from {Fore.BLUE}{agent_name}. Feedback response: {parsed_feedback}{Style.RESET_ALL}"

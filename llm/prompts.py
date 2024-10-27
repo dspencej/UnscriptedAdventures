@@ -88,18 +88,18 @@ def revise_campaign_prompt(context, storyline, feedback):
     )
 
 
-def format_feedback_prompt(expected_keys, response):
+def format_feedback_prompt(expected_keys):
     # Dynamically generate the JSON format example based on expected keys
     json_example = ",\n".join([f'  "{key}": "value"' for key in expected_keys])
 
     return (
         f"Error: The last response had incorrect formatting.\n\n"
-        f"Please resend the response in proper JSON format, ensuring all required fields are included.\n"
-        f"Previous Incorrect Response:\n{response}\n\n"
+        f"Your response has not been delivered to the player because it was in the wrong format.\n"
+        f"Do NOT generate a new response. Instead resend your previous response and comply with the required grammar.\n"
+        f"You must respond in JSON with the following keys:\n"
         f"Expected JSON Keys:\n{expected_keys}\n\n"
         f"Required Format:\n"
         f"```json\n"
         f"{{\n{json_example}\n}}\n"
         f"```\n\n"
-        f"Corrected Response:\n"
     )
