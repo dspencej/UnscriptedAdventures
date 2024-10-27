@@ -96,6 +96,7 @@ def format_feedback_prompt(expected_keys):
         f"Error: The last response had incorrect formatting.\n\n"
         f"Your response has not been delivered to the player because it was in the wrong format.\n"
         f"Do NOT generate a new response. Instead resend your previous response and comply with the required grammar.\n"
+        f"Do not apologize or greet me.\n"
         f"You must respond in JSON with the following keys:\n"
         f"Expected JSON Keys:\n{expected_keys}\n\n"
         f"Required Format:\n"
