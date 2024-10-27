@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Manage Saved Games - UnscriptedAdventures</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Cinzel+Decorative:wght@700&display=swap" rel="stylesheet">
+    <link href="{{ url_for('static', filename='styles.css') }}" rel="stylesheet">
+</head>
+<body>
+    {% include 'navbar.html' %}
+    <h1>Manage Saved Games</h1>
+    <div class="manage-games-container">
+        <table class="game-table">
+            <thead>
+                <tr>
+                    <th>Game Name</th>
+                    <th>Save Time</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for game in saved_games %}
+                <tr>
+                    <td>{{ game.game_name }}</td>
+                    <td>{{ game.save_time.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                    <td>
+                        <div class="button-container">
+                            <button onclick="loadGame({{ game.id }})">Load</button>
+                            <button onclick="deleteGame({{ game.id }})">Delete</button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        function loadGame(gameId) {
+            fetch(`/load_game/${gameId}`, {
+                method: 'POST',
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('Game loaded: ' + data.message);
+                    window.location.href = '/';
+                } else {
+                    alert('Error loading game: ' + data.message);
+                }
+            })
+            .catch(error => console.error('Error loading game:', error));
+        }
+
+        function deleteGame(gameId) {
+            if (confirm('Are you sure you want to delete this game?')) {
+                fetch(`/delete_game/${gameId}`, {
+                    method: 'DELETE',  // Use DELETE method
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        alert(data.message);
+                        location.reload();
+                    } else {
+                        alert('Error deleting game: ' + data.message);
+                    }
+                })
+                .catch(error => console.error('Error deleting game:', error));
+            }
+        }
+    </script>
+</body>
+</html>

@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>UnscriptedAdventures</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UnscriptedAdventures</title>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Cinzel+Decorative:wght@700&display=swap" rel="stylesheet">
@@ -12,26 +11,19 @@
     {% include 'navbar.html' %}
     <h1>UnscriptedAdventures</h1>
 
-    <!-- Apply the index-container class for consistent layout styling -->
     <div class="index-container">
-        <!-- Game Display Container -->
         <div class="game-display" id="gameDisplay">
             <!-- The game display content will be populated by JavaScript -->
         </div>
 
-        <!-- Game Control Buttons (Moved below the game display) -->
         <div class="game-controls">
             <div class="button-container">
                 <button onclick="newGame()" aria-label="Start a new game">New Game</button>
                 <button onclick="saveGame()" aria-label="Save your game">Save Game</button>
-                <button onclick="loadGame()" aria-label="Load a saved game">Load Game</button>
-                <button onclick="clearGameDisplay()" aria-label="Clear game display">Clear</button>
             </div>
         </div>
 
-        <!-- Input and Character Sheet Containers -->
         <div class="input-character-layout">
-            <!-- Input Section -->
             <div class="input-section">
                 <textarea id="userInput" placeholder="Enter your response..." aria-label="User input"></textarea>
                 <div class="button-container">
@@ -40,7 +32,6 @@
                 </div>
             </div>
 
-            <!-- Character Sheet Section -->
             {% if current_character %}
             <div class="character-sheet">
                 <h2>{{ current_character.name }}</h2>
@@ -56,140 +47,153 @@
         </div>
     </div>
 
-<script>
-    // Retrieve conversation history from server-side variable
-    const conversationHistory = {{ conversation_history | tojson }};
+    <script>
+        // Retrieve conversation history from server-side variable
+        const conversationHistory = {{ conversation_history | tojson }};
 
-    document.addEventListener('DOMContentLoaded', (event) => {
-        const gameDisplay = document.getElementById('gameDisplay');
-        // Clear the game display to prevent duplication
-        gameDisplay.innerHTML = '';
+        document.addEventListener('DOMContentLoaded', (event) => {
+            const gameDisplay = document.getElementById('gameDisplay');
+            gameDisplay.innerHTML = ''; // Clear the game display
 
-        if (conversationHistory.length > 0) {
-            conversationHistory.forEach(message => {
-                if (message.role === 'user') {
-                    gameDisplay.innerHTML += `<pre class="formatted-text"><strong>You:</strong> ${message.content}</pre>`;
-                } else {
-                    gameDisplay.innerHTML += `<pre class="formatted-text"><strong>GM:</strong> ${message.content}</pre>`;
+            if (conversationHistory.length > 0) {
+                conversationHistory.forEach(message => {
+                    const formattedMessage = `
+                        <div class="message-wrapper">
+                            <div class="formatted-text">
+                                <strong>${message.role === 'user' ? 'You' : 'GM'}:</strong> ${formatMessageContent(message.content)}
+                            </div>
+                        </div>`;
+                    gameDisplay.innerHTML += formattedMessage;
+                });
+                gameDisplay.scrollTop = gameDisplay.scrollHeight; // Scroll to bottom
+            } else {
+                gameDisplay.innerHTML = '<p>Welcome to the world of UnscriptedAdventures. The journey begins...</p>';
+            }
+
+            document.getElementById('userInput').addEventListener('keydown', function(event) {
+                if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault();
+                    sendInteraction();
                 }
             });
-            gameDisplay.scrollTop = gameDisplay.scrollHeight;
-        } else {
-            // Display the initial welcome message
-            gameDisplay.innerHTML = '<p>Welcome to the world of UnscriptedAdventures. The journey begins...</p>';
-        }
-
-        // Add the event listener for pressing "Enter" in the textarea
-        document.getElementById('userInput').addEventListener('keydown', function(event) {
-            if (event.key === 'Enter' && !event.shiftKey) {
-                event.preventDefault(); // Prevents creating a new line in the textarea
-                sendInteraction(); // Calls the send function when Enter is pressed
-            }
         });
-    });
 
-    async function sendInteraction() {
-        const userInputBox = document.getElementById('userInput');
-        const userInput = userInputBox.value.trim();
-        const loadingSpinner = document.getElementById('loadingSpinner');
-        const sendButton = document.querySelector('.button-container button');
-
-        if (!userInput) {
-            alert("Please enter a response before sending.");
-            return;
+        // Function to format the message content
+        function formatMessageContent(content) {
+            return content
+                .replace(/\n/g, '<br>') // Replace newlines with <br> for proper HTML formatting
+                .replace(/(\d+\.)/g, '<br><strong>$1</strong>'); // Bold the option numbers and add newlines before each option
         }
 
-        // Disable the send button
-        sendButton.disabled = true;
-        loadingSpinner.style.display = 'inline-block';
+        async function sendInteraction() {
+            const userInputBox = document.getElementById('userInput');
+            const userInput = userInputBox.value.trim();
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const sendButton = document.querySelector('.button-container button');
 
-        try {
-            const response = await fetch('/interact', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ user_input: userInput })
-            });
-
-            const data = await response.json();
-
-            if (response.status === 400) {
-                alert(data.message);
+            if (!userInput) {
+                alert("Please enter a response before sending.");
                 return;
             }
 
-            const gameDisplay = document.getElementById('gameDisplay');
-            gameDisplay.innerHTML += `<pre class="formatted-text"><strong>You:</strong> ${userInput}</pre>`;
-            gameDisplay.innerHTML += `<pre class="formatted-text"><strong>GM:</strong> ${data.gm_response}</pre>`;
-            gameDisplay.scrollTop = gameDisplay.scrollHeight;
+            sendButton.disabled = true;
+            loadingSpinner.style.display = 'inline-block';
 
-            userInputBox.value = '';
-            userInputBox.setAttribute('placeholder', 'Enter your response...');
+            try {
+                const response = await fetch('/interact', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ user_input: userInput })
+                });
 
-        } catch (error) {
-            console.error('Error:', error);
-        } finally {
-            // Enable the send button
-            sendButton.disabled = false;
-            loadingSpinner.style.display = 'none';
-        }
-    }
+                const data = await response.json();
 
-    function newGame() {
-        if (confirm('Are you sure you want to start a new game? This will reset your current progress.')) {
-            fetch('/new_game', { method: 'POST' })
-                .then(response => response.json())
-                .then(data => {
+                if (response.status === 400) {
                     alert(data.message);
-                    location.reload(); // Reload the page to reflect changes
-                })
-                .catch(error => console.error('Error starting new game:', error));
-        }
-    }
-
-    function clearGameDisplay() {
-        if (confirm('Are you sure you want to clear the game display?')) {
-            fetch('/clear_game', { method: 'POST' })
-                .then(response => response.json())
-                .then(data => {
-                    alert(data.message);
-                    location.reload(); // Reload the page to reflect changes
-                })
-                .catch(error => console.error('Error clearing game display:', error));
-        }
-    }
-
-    async function saveGame() {
-        try {
-            const response = await fetch('/save_game', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
+                    return;
                 }
-            });
-            const data = await response.json();
-            alert(data.message);
-        } catch (error) {
-            console.error('Error saving game:', error);
-        }
-    }
 
-    async function loadGame() {
-        try {
-            const response = await fetch('/load_game', { method: 'GET' });
-            const data = await response.json();
-            if (data.status === "success") {
-                alert(data.message);
-                location.reload(); // Reload the page to reflect loaded game state
-            } else {
-                alert("Failed to load game: " + data.message);
+                const gameDisplay = document.getElementById('gameDisplay');
+                gameDisplay.innerHTML += `
+                    <div class="message-wrapper">
+                        <div class="formatted-text"><strong>You:</strong> ${userInput}</div>
+                    </div>`;
+                gameDisplay.innerHTML += `
+                    <div class="message-wrapper">
+                        <div class="formatted-text"><strong>GM:</strong> ${formatMessageContent(data.gm_response)}</div>
+                    </div>`;
+                gameDisplay.scrollTop = gameDisplay.scrollHeight; // Scroll to bottom
+
+                userInputBox.value = '';
+                userInputBox.setAttribute('placeholder', 'Enter your response...');
+            } catch (error) {
+                console.error('Error:', error);
+            } finally {
+                sendButton.disabled = false;
+                loadingSpinner.style.display = 'none';
             }
-        } catch (error) {
-            console.error('Error loading game:', error);
         }
-    }
-</script>
 
+        function newGame() {
+            if (confirm('Are you sure you want to start a new game? This will reset your current progress.')) {
+                fetch('/new_game', { method: 'POST' })
+                    .then(response => response.json())
+                    .then(data => {
+                        alert(data.message);
+                        location.reload();
+                    })
+                    .catch(error => console.error('Error starting new game:', error));
+            }
+        }
+
+        async function saveGame() {
+            // Check if the character name exists, and use it as part of the default game name
+            const characterName = "{{ current_character.name }}" || "Unnamed";
+            const defaultGameName = `${characterName}_game`;
+
+            // Prompt the user with the default game name pre-filled
+            let gameName = prompt("Enter a name for this save:", defaultGameName);
+
+            // If the user cancels or leaves it empty, cancel the operation
+            if (!gameName) {
+                alert("Save game operation canceled.");
+                return;
+            }
+
+            try {
+                // Check if a game with this name already exists
+                const checkResponse = await fetch(`/check_game_exists/${encodeURIComponent(gameName)}`, {
+                    method: 'GET'
+                });
+                const checkData = await checkResponse.json();
+
+                if (checkData.exists) {
+                    // Ask for confirmation to overwrite the game
+                    const confirmOverwrite = confirm(`A game with the name "${gameName}" already exists. Do you want to overwrite it?`);
+                    if (!confirmOverwrite) {
+                        alert("Save operation canceled.");
+                        return;
+                    }
+                }
+
+                // Proceed to save the game
+                const response = await fetch('/save_game', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ game_name: gameName })  // Pass the game name to the server
+                });
+                const data = await response.json();
+                alert(data.message);
+            } catch (error) {
+                console.error('Error saving game:', error);
+            }
+        }
+
+
+    </script>
 </body>
 </html>

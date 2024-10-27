@@ -21,3 +21,7 @@ requests==2.32.3
 urllib3==2.2.3
 PyPDF2==3.0.1
 colorama==0.4.6
+
+Flask-SQLAlchemy==3.1.1
+SQLAlchemy==2.0.36
+Flask-Migrate==4.0.7

@@ -13,34 +13,34 @@
         <form class="game-preferences-form" id="preferencesForm">
             <label for="gameStyle">Preferred Game Style:</label>
             <select id="gameStyle" name="gameStyle" required>
-                <option value="combat" {% if preferences.get('gameStyle') == 'combat' %}selected{% endif %}>Combat-Focused</option>
-                <option value="narrative" {% if preferences.get('gameStyle') == 'narrative' %}selected{% endif %}>Narrative-Driven</option>
-                <option value="exploration" {% if preferences.get('gameStyle') == 'exploration' %}selected{% endif %}>Exploration-Based</option>
-                <option value="puzzle" {% if preferences.get('gameStyle') == 'puzzle' %}selected{% endif %}>Puzzle-Solving</option>
+                <option value="combat" {% if preferences.gameStyle == 'combat' %}selected{% endif %}>Combat-Focused</option>
+                <option value="narrative" {% if preferences.gameStyle == 'narrative' %}selected{% endif %}>Narrative-Driven</option>
+                <option value="exploration" {% if preferences.gameStyle == 'exploration' %}selected{% endif %}>Exploration-Based</option>
+                <option value="puzzle" {% if preferences.gameStyle == 'puzzle' %}selected{% endif %}>Puzzle-Solving</option>
             </select>
 
             <label for="tone">Preferred Tone:</label>
             <select id="tone" name="tone" required>
-                <option value="lighthearted" {% if preferences.get('tone') == 'lighthearted' %}selected{% endif %}>Lighthearted</option>
-                <option value="serious" {% if preferences.get('tone') == 'serious' %}selected{% endif %}>Serious</option>
-                <option value="dark" {% if preferences.get('tone') == 'dark' %}selected{% endif %}>Dark and Gritty</option>
-                <option value="mysterious" {% if preferences.get('tone') == 'mysterious' %}selected{% endif %}>Mysterious</option>
+                <option value="lighthearted" {% if preferences.tone == 'lighthearted' %}selected{% endif %}>Lighthearted</option>
+                <option value="serious" {% if preferences.tone == 'serious' %}selected{% endif %}>Serious</option>
+                <option value="dark" {% if preferences.tone == 'dark' %}selected{% endif %}>Dark and Gritty</option>
+                <option value="mysterious" {% if preferences.tone == 'mysterious' %}selected{% endif %}>Mysterious</option>
             </select>
 
             <label for="difficulty">Difficulty Level:</label>
             <select id="difficulty" name="difficulty" required>
-                <option value="easy" {% if preferences.get('difficulty') == 'easy' %}selected{% endif %}>Easy</option>
-                <option value="medium" {% if preferences.get('difficulty') == 'medium' %}selected{% endif %}>Medium</option>
-                <option value="hard" {% if preferences.get('difficulty') == 'hard' %}selected{% endif %}>Hard</option>
-                <option value="extreme" {% if preferences.get('difficulty') == 'extreme' %}selected{% endif %}>Extreme</option>
+                <option value="easy" {% if preferences.difficulty == 'easy' %}selected{% endif %}>Easy</option>
+                <option value="medium" {% if preferences.difficulty == 'medium' %}selected{% endif %}>Medium</option>
+                <option value="hard" {% if preferences.difficulty == 'hard' %}selected{% endif %}>Hard</option>
+                <option value="extreme" {% if preferences.difficulty == 'extreme' %}selected{% endif %}>Extreme</option>
             </select>
 
             <label for="theme">Preferred Theme:</label>
             <select id="theme" name="theme" required>
-                <option value="fantasy" {% if preferences.get('theme') == 'fantasy' %}selected{% endif %}>Fantasy</option>
-                <option value="sci-fi" {% if preferences.get('theme') == 'sci-fi' %}selected{% endif %}>Science Fiction</option>
-                <option value="post-apocalyptic" {% if preferences.get('theme') == 'post-apocalyptic' %}selected{% endif %}>Post-Apocalyptic</option>
-                <option value="historical" {% if preferences.get('theme') == 'historical' %}selected{% endif %}>Historical</option>
+                <option value="fantasy" {% if preferences.theme == 'fantasy' %}selected{% endif %}>Fantasy</option>
+                <option value="sci-fi" {% if preferences.theme == 'sci-fi' %}selected{% endif %}>Science Fiction</option>
+                <option value="post-apocalyptic" {% if preferences.theme == 'post-apocalyptic' %}selected{% endif %}>Post-Apocalyptic</option>
+                <option value="historical" {% if preferences.theme == 'historical' %}selected{% endif %}>Historical</option>
             </select>
 
             <div class="button-container">

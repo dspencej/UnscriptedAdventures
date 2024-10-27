@@ -16,28 +16,28 @@
             <label for="characterName">Character Name:</label>
             <input type="text" id="characterName" name="characterName" required>
 
+            <!-- Race Dropdown -->
             <label for="characterRace">Race:</label>
             <select id="characterRace" name="characterRace">
-                <option value="Human">Human</option>
-                <option value="Elf">Elf</option>
-                <option value="Dwarf">Dwarf</option>
-                <option value="Halfling">Halfling</option>
-                <!-- Add more options as needed -->
+                {% for race in races %}
+                    <option value="{{ race.name }}">{{ race.name }}</option>
+                {% endfor %}
             </select>
 
+            <!-- Class Dropdown -->
             <label for="characterClass">Class:</label>
             <select id="characterClass" name="characterClass">
-                <option value="Fighter">Fighter</option>
-                <option value="Wizard">Wizard</option>
-                <option value="Rogue">Rogue</option>
-                <!-- Add more options as needed -->
+                {% for class in classes %}
+                    <option value="{{ class.name }}">{{ class.name }}</option>
+                {% endfor %}
             </select>
 
+            <!-- Background Dropdown -->
             <label for="characterBackground">Background:</label>
             <select id="characterBackground" name="characterBackground">
-                <option value="Acolyte">Acolyte</option>
-                <option value="Criminal">Criminal</option>
-                <!-- Add more options as needed -->
+                {% for background in backgrounds %}
+                    <option value="{{ background.name }}">{{ background.name }}</option>
+                {% endfor %}
             </select>
 
             <div class="button-container">

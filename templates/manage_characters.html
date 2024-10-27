@@ -23,12 +23,13 @@
                 {% for character in characters %}
                 <tr>
                     <td>{{ character.name }}</td>
-                    <td>{{ character.race }}</td>
-                    <td>{{ character.class }}</td>
+                    <td>{{ character.race.name }}</td>
+                    <td>{{ character.character_class.name }}</td>
                     <td>
                         <div class="button-container">
-                            <button onclick="loadCharacter({{ loop.index0 }})">Load</button>
-                            <button onclick="deleteCharacter({{ loop.index0 }})">Delete</button>
+                            <!-- Pass character.id for correct handling -->
+                            <button onclick="loadCharacter({{ character.id }})">Load</button>
+                            <button onclick="deleteCharacter({{ character.id }})">Delete</button>
                         </div>
                     </td>
                 </tr>
