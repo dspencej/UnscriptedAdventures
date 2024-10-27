@@ -2,8 +2,8 @@
 import os
 
 # Select LLM provider: 'ollama' or 'opal'
-LLM_PROVIDER = "ollama"
-# LLM_PROVIDER = "opal"
+# LLM_PROVIDER = "ollama"
+LLM_PROVIDER = "opal"
 
 # Common LLM configuration
 OLLAMA_MODEL = "llama3:latest"

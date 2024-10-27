@@ -6,11 +6,11 @@
 /* CSS Variables for Consistency */
 :root {
     --primary-color: #7a4a36;
-    --secondary-color: #2a1d1b;
-    --background-color: #f2e6d9;
+    --secondary-color: #222222;
+    --background-color: #fffdf5;
     --accent-color: #d4c5a2;
     --light-background-color: rgba(255, 248, 230, 0.9);
-    --font-family: 'Cinzel', serif;
+    --font-family: 'Roboto', sans-serif;
     --heading-font-family: 'Cinzel Decorative', serif;
 }
 
@@ -20,15 +20,17 @@ body {
     background-color: var(--background-color);
     background-image: url('https://www.transparenttextures.com/patterns/old-mathematics.png');
     color: var(--secondary-color);
+    font-size: 18px; /* Increased base font size for readability */
+    font-weight: 400;
     margin: 0;
     padding: 0;
-    line-height: 1.6;
+    line-height: 1.8; /* Increased line-height for improved readability */
 }
 
 /* Navbar Styling */
 .navbar {
     background-color: var(--primary-color);
-    padding: 10px;
+    padding: 15px;
     text-align: center;
 }
 
@@ -48,15 +50,32 @@ h1 {
     font-family: var(--heading-font-family);
     text-align: center;
     color: var(--primary-color);
-    font-size: 3em;
+    font-size: 3.5rem; /* Larger font size for h1 */
     margin-bottom: 20px;
+    line-height: 1.2;
     text-shadow: 2px 2px var(--accent-color);
+}
+
+h2 {
+    font-family: var(--heading-font-family);
+    color: var(--primary-color);
+    font-size: 2.75rem; /* Larger font size for h2 */
+    margin-bottom: 15px;
+    line-height: 1.3;
+}
+
+h3 {
+    font-family: var(--heading-font-family);
+    color: var(--primary-color);
+    font-size: 2.25rem; /* Larger font size for h3 */
+    margin-bottom: 10px;
+    line-height: 1.4;
 }
 
 /* Shared Button Styling */
 button {
-    padding: 10px 20px;
-    font-size: 16px;
+    padding: 12px 25px;
+    font-size: 18px; /* Slightly larger button font size */
     border: 2px solid var(--primary-color);
     border-radius: 5px;
     background-color: var(--primary-color);
@@ -87,11 +106,11 @@ input[type="email"],
 select,
 textarea {
     width: 100%;
-    padding: 10px;
+    padding: 12px;
     margin-bottom: 15px;
     border-radius: 5px;
     border: 2px solid var(--primary-color);
-    font-size: 16px;
+    font-size: 18px; /* Increased input font size */
     background-color: #fff8e7;
     color: var(--secondary-color);
     box-sizing: border-box;
@@ -144,7 +163,8 @@ textarea {
 }
 
 strong {
-    color: var(--primary-color);
+    font-weight: 700; /* Explicitly setting it to bold */
+    color: var(--primary-color); /* Retain your color preference */
 }
 
 /* Loading Spinner */
@@ -183,7 +203,7 @@ strong {
 .game-display {
     width: 100%;
     max-width: 960px;
-    height: 400px; /* Increased height */
+    height: 400px;
     padding: 15px;
     margin-bottom: 20px;
     border: 2px solid var(--primary-color);
@@ -193,7 +213,7 @@ strong {
     overflow-y: auto;
     overflow-x: hidden; /* Prevent horizontal scroll */
     color: var(--secondary-color);
-    font-size: 16px;
+    font-size: 18px; /* Increased text size for better readability */
 }
 
 /* Ensure text wraps within the game display */
@@ -204,24 +224,37 @@ strong {
     overflow-wrap: break-word;
 }
 
-/* Message Styling */
+/* Formatted Text for Game Display */
 .formatted-text {
-    padding: 5px;
-    margin: 0;
-    color: var(--secondary-color);
-    white-space: pre-wrap;
+    padding: 12px 18px;  /* Increased padding */
+    margin-bottom: 10px; /* Increased space between text blocks */
+    white-space: normal;
     word-wrap: break-word;
     overflow-wrap: break-word;
+    color: var(--secondary-color);
+    font-weight: 400;
+    line-height: 1.8;
 }
 
 /* Alternating Background Colors for Messages */
 .formatted-text:nth-child(odd) {
-    background-color: rgba(255, 248, 230, 0.7);
+    background-color: #f9f3e5;
 }
 
 .formatted-text:nth-child(even) {
-    background-color: rgba(255, 248, 230, 0.9);
+    background-color: #f4ebd7;
 }
+
+.message-wrapper {
+    margin-bottom: 15px;
+    padding: 8px;
+    background-color: var(--light-background-color);
+    border-radius: 5px;
+    border: 1px solid rgba(0, 0, 0, 0.2); /* Add a subtle, darker border */
+    box-shadow: 2px 4px 8px rgba(0, 0, 0, 0.15), 4px 8px 16px rgba(0, 0, 0, 0.1); /* Improved shadow */
+}
+
+
 
 /* Layout for Input Section and Character Sheet */
 .input-character-layout {
@@ -265,7 +298,7 @@ strong {
 
 /* Textarea Styling for User Input */
 textarea#userInput {
-    height: 120px;
+    height: 140px; /* Slightly increased height for textarea */
 }
 
 /* Character Sheet Styling */
@@ -280,7 +313,7 @@ textarea#userInput {
 }
 
 .character-sheet h2 {
-    font-size: 24px;
+    font-size: 26px; /* Increased font size */
     text-align: center;
     margin-bottom: 10px;
     color: var(--secondary-color);
@@ -403,14 +436,14 @@ textarea#userInput {
 
 .about-container p {
     margin-bottom: 15px;
-    font-size: 16px;
+    font-size: 18px; /* Increased font size for body text */
     color: #2a1d1b;
 }
 
 .about-container h2 {
     margin-top: 20px;
     margin-bottom: 10px;
-    font-size: 24px;
+    font-size: 26px; /* Increased font size */
     color: #7a4a36;
 }
 
@@ -457,7 +490,7 @@ textarea#userInput {
 .character-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 16px;
+    font-size: 18px; /* Increased table font size */
     color: #2a1d1b;
 }
 
@@ -497,10 +530,9 @@ textarea#userInput {
     /* Inherits common button styles */
 }
 
-
 /* ======================================= */
 /*       THANK YOU PAGE STYLES             */
-/* Styles specific to thank_you.html       */
+/* Styles specific to thank_you.html */
 /* ======================================= */
 
 .thank-you-container {
@@ -512,4 +544,86 @@ textarea#userInput {
     border-radius: 10px;
     background-color: rgba(255, 248, 230, 0.9);
     box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+}
+
+/* ======================================= */
+/*     MANAGE SAVED GAMES PAGE STYLES      */
+/* Styles specific to manage_saved_games.html */
+/* ======================================= */
+
+.manage-games-container {
+    width: 100%;
+    max-width: 1000px;
+    padding: 20px;
+    margin: 0 auto;
+    border: 2px solid var(--primary-color);
+    border-radius: 10px;
+    background-color: var(--light-background-color);
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+}
+
+/* Game Table Styling */
+.game-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 18px; /* Consistent with overall font size */
+    color: var(--secondary-color);
+}
+
+.game-table thead {
+    background-color: var(--primary-color);
+    color: #fff8e7;
+}
+
+.game-table th, .game-table td {
+    padding: 10px;
+    border: 1px solid var(--primary-color);
+    text-align: left;
+}
+
+.game-table tr:nth-child(even) {
+    background-color: rgba(255, 248, 230, 0.6);
+}
+
+.game-table tr:hover {
+    background-color: rgba(255, 248, 230, 0.8);
+}
+
+/* Button Container for Actions */
+.game-table .button-container {
+    display: flex;
+    gap: 10px;
+}
+
+/* Button Adjustments for Game Actions */
+.game-table button {
+    padding: 8px 12px;
+    font-size: 16px;
+    border: 2px solid var(--primary-color);
+    border-radius: 5px;
+    background-color: var(--primary-color);
+    color: #fff8e7;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.game-table button:hover {
+    background-color: var(--secondary-color);
+}
+
+/* Responsive Design */
+@media screen and (max-width: 768px) {
+    .manage-games-container {
+        padding: 15px;
+    }
+
+    .game-table th, .game-table td {
+        font-size: 16px;
+        padding: 8px;
+    }
+
+    .game-table button {
+        font-size: 14px;
+        padding: 6px 10px;
+    }
 }
