@@ -1,6 +1,6 @@
 # llm/prompts.py
 
-def create_campaign_prompt(user_preferences):
+def create_campaign_prompt(user_input, user_preferences):
     preferences_text = "\n".join(
         [f"- {key}: {value}" for key, value in user_preferences.items()]
     )
@@ -8,13 +8,14 @@ def create_campaign_prompt(user_preferences):
         f"You are the Dungeon Master of a character-driven, high-fantasy Dungeons & Dragons 5th Edition campaign. "
         f"Design an original, immersive storyline that deeply engages the player’s preferred game style.\n\n"
         f"**User Preferences:**\n{preferences_text}\n\n"
+        f"**User Input:**\n{user_input}\n\n"
         f"**Instructions:**\n"
         f"- **Role & Tone:** Act as a narrator, providing descriptions and events in a style that matches the player’s preferred tone (e.g., serious, heroic, whimsical).\n\n"
         f"- **World Building:** Create an intricate, high-fantasy setting filled with mysteries, conflicts, and wonders.\n"
         f"  - Develop a primary quest that introduces challenges aligning with the user's preferences.\n"
         f"  - Include side plots that provide opportunities for exploration, character development, and player agency.\n\n"
         f"- **Immersive Descriptions:** Start with a vivid opening scene, rich with sensory details (sights, sounds, smells) to set the campaign's mood.\n"
-        f"  - Describe locations in 3-5 sentences, covering atmosphere, notable landmarks, and any nearby NPCs or creatures.\n"
+        f"  - Describe locations, covering atmosphere, notable landmarks, and any nearby NPCs or creatures.\n"
         f"  - Each scene should allow player-driven decisions without imposing actions or objectives.\n\n"
         f"- **NPCs:**\n"
         f"  - Create NPCs with distinct personalities, motivations, and goals that could reveal secrets, alliances, or conflicts over time.\n"

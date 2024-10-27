@@ -191,7 +191,7 @@ def extract_json_from_text(response: str) -> Optional[str]:
     Attempts to extract a JSON object from a text block, checking for '```json' first,
     and if not found, checking for JSON-like content enclosed in curly braces.
     """
-    logger.debug("Attempting to extract JSON block from response.")
+    logger.debug(f"{Fore.MAGENTA}Attempting to extract JSON block from response.{Style.RESET_ALL}")
 
     # Step 1: Look for a JSON block enclosed in ```json ... ```
     json_block_pattern = r"```json\s*(\{.*?\})\s*```"
@@ -205,11 +205,11 @@ def extract_json_from_text(response: str) -> Optional[str]:
             )  # Clean up control characters
             return json_str
         except Exception as e:
-            logger.error(f"Error cleaning JSON block: {e}")
+            logger.error(f"{Fore.RED}Error cleaning JSON block: {e}{Style.RESET_ALL}")
             return None
 
     # Step 2: If no JSON block found, check for JSON-like content using curly braces
-    logger.debug("No valid JSON block found, checking for JSON-like content.")
+    logger.debug(f"{Fore.MAGENTA}No valid JSON block found, checking for JSON-like content.{Style.RESET_ALL}")
     json_pattern = r"(\{.*?\})"
     match = re.search(json_pattern, response, re.DOTALL)
 
@@ -219,10 +219,10 @@ def extract_json_from_text(response: str) -> Optional[str]:
             json_str = re.sub(r"[\x00-\x1F\x7F]", "", json_str)
             return json_str
         except Exception as e:
-            logger.error(f"Error cleaning JSON-like content: {e}")
+            logger.error(f"{Fore.RED}Error cleaning JSON-like content: {e}{Style.RESET_ALL}")
             return None
 
-    logger.error("No valid JSON found in the response after multiple attempts.")
+    logger.error(f"{Fore.RED}No valid JSON found in the response after multiple attempts.{Style.RESET_ALL}")
     return None
 
 
@@ -292,16 +292,16 @@ async def generate_gm_response(
     """
     Manages the workflow for starting or continuing a campaign, including communication between agents.
     """
-    logger.debug("Generating GM response.")
+    logger.debug(f"{Fore.MAGENTA}Generating GM response.{Style.RESET_ALL}")
     is_new_campaign = not conversation_history or len(conversation_history) == 0
     context = build_conversation_context(conversation_history, user_preferences)
-    logger.debug(f"Conversation context:\n{context}")
+    logger.debug(f"{Fore.MAGENTA}Conversation context:\n{Fore.BLUE}{context}{Style.RESET_ALL}")
 
     if not storyline:
         storyline = ""
 
     if is_new_campaign:
-        logger.debug(f"{Fore.MAGENTA}Starting a new campaign.")
+        logger.debug(f"{Fore.MAGENTA}Starting a new campaign.{Style.RESET_ALL}")
         dm_prompt_content = create_campaign_prompt(user_input, user_preferences)
         dm_prompt = [{"role": "DMAgent", "content": dm_prompt_content}]
 
@@ -384,7 +384,7 @@ async def generate_gm_response(
             return {"dm_response": dm_response_text, "full_storyline": storyline}
 
     else:
-        logger.debug("Ongoing campaign detected.")
+        logger.debug(f"{Fore.MAGENTA}Ongoing campaign detected.{Style.RESET_ALL}")
 
         if not storyline:
             return {
