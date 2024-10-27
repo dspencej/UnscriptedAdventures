@@ -55,11 +55,6 @@ AGENTS = {
 # Helper Functions
 # ============================
 
-# ============================
-# Helper Functions
-# ============================
-
-
 async def parse_response(agent_name: str, response: str) -> Optional[Dict[str, Any]]:
     """
     Attempts to extract and parse a JSON object from a text response.
@@ -144,7 +139,7 @@ async def get_agent_response(
     prompt: List[Dict[str, str]],
     expected_keys: List[str],
     max_retries: int = MAX_RETRIES,
-) -> None | dict | list[Any]:
+) -> Optional[dict]:
     """
     Sends a prompt to the specified agent and retrieves the expected keys from the response.
     Retries the process up to max_retries times if the response is not valid JSON or is missing expected keys.
@@ -156,6 +151,16 @@ async def get_agent_response(
             f"{Fore.RED}[ERROR] Agent '{agent_name}' not found.{Style.RESET_ALL}"
         )
         return None
+
+    # Map custom roles to valid OpenAI roles
+    for message in prompt:
+        if message["role"] not in ["system", "user", "assistant"]:
+            if message["role"] == agent_name:
+                # Agent's own messages are 'assistant'
+                message["role"] = "assistant"
+            else:
+                # Other messages are from the user
+                message["role"] = "user"
 
     retries = 0
     while retries < max_retries:
@@ -325,8 +330,9 @@ async def handle_storyline_feedback(
             f"{Fore.MAGENTA}[ATTEMPT {retries + 1}/{max_retries}] Handling storyline feedback.{Style.RESET_ALL}"
         )
 
+        dm_prompt_mapped = map_roles_in_prompt(dm_prompt, "DMAgent")
         revised_response = await get_agent_response(
-            "DMAgent", dm_prompt, ["dm_response"]
+            "DMAgent", dm_prompt_mapped, ["dm_response"]
         )
 
         # Check if revised_response contains the expected keys or fallback to "raw_response"
@@ -362,6 +368,17 @@ async def handle_storyline_feedback(
         None  # Return None or an appropriate fallback value when retries are exhausted
     )
 
+def map_roles_in_prompt(prompt: List[Dict[str, str]], agent_name: str) -> List[Dict[str, str]]:
+    """
+    Maps custom roles in the prompt to valid OpenAI roles.
+    """
+    for message in prompt:
+        if message["role"] not in ["system", "user", "assistant"]:
+            if message["role"] == agent_name:
+                message["role"] = "assistant"
+            else:
+                message["role"] = "user"
+    return prompt
 
 # ============================
 # Main Function
@@ -393,7 +410,7 @@ async def generate_gm_response(
             f"{Fore.MAGENTA}[NEW CAMPAIGN] Starting a new campaign.{Style.RESET_ALL}"
         )
         dm_prompt_content = create_campaign_prompt(user_input, context)
-        dm_prompt = [{"role": "DMAgent", "content": dm_prompt_content}]
+        dm_prompt = [{"role": "system", "content": dm_prompt_content}]
 
         dm_response = await get_agent_response("DMAgent", dm_prompt, ["dm_response"])
         logger.debug(
@@ -430,7 +447,7 @@ async def generate_gm_response(
             context, dm_response_text
         )
         storyteller_prompt = [
-            {"role": "StorytellerAgent", "content": storyteller_prompt_content}
+            {"role": "system", "content": storyteller_prompt_content}
         ]
 
         storyteller_response = await get_agent_response(
@@ -453,10 +470,10 @@ async def generate_gm_response(
                 context, dm_response_text, feedback
             )
             dm_feedback_prompt = [
-                {"role": "DMAgent", "content": dm_feedback_prompt_content}
+                {"role": "system", "content": dm_feedback_prompt_content}
             ]
 
-            # Get the response from handle_inconsistent_storyline
+            # Get the response from handle_storyline_feedback
             dm_revision_response = await handle_storyline_feedback(dm_feedback_prompt)
 
             # Extract revised response
@@ -509,7 +526,7 @@ async def generate_gm_response(
             context, storyline, user_input
         )
         dm_continue_prompt = [
-            {"role": "DMAgent", "content": dm_continue_prompt_content}
+            {"role": "system", "content": dm_continue_prompt_content}
         ]
 
         # Get DM Agent's response
@@ -547,7 +564,7 @@ async def generate_gm_response(
             context, dm_response_text
         )
         storyteller_continue_prompt = [
-            {"role": "StorytellerAgent", "content": storyteller_continue_prompt_content}
+            {"role": "system", "content": storyteller_continue_prompt_content}
         ]
 
         storyteller_response = await get_agent_response(
@@ -570,7 +587,7 @@ async def generate_gm_response(
                 context, dm_response_text, feedback
             )
             dm_feedback_prompt = [
-                {"role": "DMAgent", "content": dm_feedback_prompt_content}
+                {"role": "system", "content": dm_feedback_prompt_content}
             ]
 
             # Get revised response for the storyline based on the feedback

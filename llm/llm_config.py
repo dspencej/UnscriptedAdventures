@@ -1,9 +1,10 @@
 # llm/llm_config.py
 import os
 
-# Select LLM provider: 'ollama' or 'opal'
-LLM_PROVIDER = "ollama"
+# Select LLM provider: 'ollama', 'opal', or 'openai'
+LLM_PROVIDER = "openai"
 # LLM_PROVIDER = "opal"
+# LLM_PROVIDER = "ollama"
 
 # Common LLM configuration
 OLLAMA_MODEL = "llama3:latest"
@@ -13,6 +14,9 @@ OLLAMA_API_KEY = "ollama"
 OPAL_MODEL = "meta-llama/Meta-Llama-3-70B-Instruct"
 OPAL_API_URL = "https://opal.jhuapl.edu/v2/chat/completions"
 OPAL_API_KEY = os.getenv("OPAL_CUI_TOKEN")
+
+OPENAI_MODEL = "gpt-4"  # Or another OpenAI model like 'gpt-3.5-turbo'
+OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
 
 if LLM_PROVIDER == "ollama":
     CONFIG_LIST = [
@@ -48,5 +52,7 @@ elif LLM_PROVIDER == "opal":
         "config_list": CONFIG_LIST,
         "timeout": 1000,
     }
+elif LLM_PROVIDER == "openai":
+    llm_config = {"model": OPENAI_MODEL, "api_key": OPENAI_API_KEY}
 else:
     raise ValueError(f"Unknown LLM_PROVIDER: {LLM_PROVIDER}")
