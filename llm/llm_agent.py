@@ -407,8 +407,7 @@ async def generate_gm_response(
 
         dm_response = await get_agent_response("DMAgent", dm_prompt, ["dm_response"])
         logger.debug(
-            f"{Fore.MAGENTA}[EXTRACTED JSON] Extracted JSON from DM Response:\n{Fore.GREEN}{dm_response
-            }{Style.RESET_ALL}"
+            f"{Fore.MAGENTA}[EXTRACTED JSON] Extracted JSON from DM Response:\n{Fore.GREEN}{dm_response}{Style.RESET_ALL}"
         )
 
         if not dm_response:
