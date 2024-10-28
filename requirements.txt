@@ -25,3 +25,4 @@ colorama==0.4.6
 Flask-SQLAlchemy==3.1.1
 SQLAlchemy==2.0.36
 Flask-Migrate==4.0.7
+

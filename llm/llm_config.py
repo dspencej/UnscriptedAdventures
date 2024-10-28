@@ -53,6 +53,26 @@ elif LLM_PROVIDER == "opal":
         "timeout": 1000,
     }
 elif LLM_PROVIDER == "openai":
-    llm_config = {"model": OPENAI_MODEL, "api_key": OPENAI_API_KEY}
+    CONFIG_LIST = [
+        {
+            "model": "gpt-4",  # Model identifier
+            "api_key": os.environ.get("OPENAI_API_KEY"),  # OpenAI API key
+            "api_type": "openai",  # Specifies OpenAI API (default)
+            "base_url": "https://api.openai.com/v1",  # OpenAI API base URL
+            "n": 1,  # Number of completions to generate
+            "max_tokens": 2048,  # Max tokens per response
+            "temperature": 0.7,  # Response creativity level
+            "top_p": 0.9,  # Probability threshold for token inclusion
+            # Optional advanced parameters
+            "cache": None,  # Optional: provide a cache object if caching responses
+            "context": {},  # Optional: context data for templated messages
+            "filter_func": None,  # Optional: custom function for filtering responses
+            "allow_format_str_template": False,  # Optional: if using format string templates
+        }
+    ]
+    llm_config = {
+        "config_list": CONFIG_LIST,
+        "timeout": 1000,
+    }
 else:
     raise ValueError(f"Unknown LLM_PROVIDER: {LLM_PROVIDER}")

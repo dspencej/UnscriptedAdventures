@@ -19,6 +19,9 @@ from llm.prompts import (
     validate_storyline_prompt,
 )
 
+# Import traceback for detailed exception logging
+import traceback
+
 # ============================
 # SSL Warning Suppression
 # ============================
@@ -50,6 +53,7 @@ AGENTS = {
     # "LoreAgent": lore_agent,
     # "CombatAgent": combat_agent,
 }
+
 
 # ============================
 # Helper Functions
@@ -85,7 +89,7 @@ async def parse_response(agent_name: str, response: str) -> Optional[Dict[str, A
 
 
 async def send_feedback_and_retry(
-    agent_name: str, expected_keys: List[str], response: str
+        agent_name: str, expected_keys: List[str]
 ) -> Optional[dict]:
     """
     Sends feedback to the agent and attempts to retrieve a corrected response.
@@ -94,10 +98,10 @@ async def send_feedback_and_retry(
     feedback_msg_content = format_feedback_prompt(expected_keys)
 
     # Format the feedback prompt with 'system' role to instruct the agent
-    feedback_prompt = [{"role": "system", "content": feedback_msg_content}]
+    feedback_msg = [{"content": feedback_msg_content,"role": "system", }]
 
     logger.debug(
-        f"{Fore.MAGENTA}[FEEDBACK] Sending feedback to {Fore.BLUE}{agent_name}: {Fore.MAGENTA}{feedback_msg_content}{Style.RESET_ALL}"
+        f"{Fore.MAGENTA}[FEEDBACK] Sending feedback to {Fore.BLUE}{agent_name}: {Fore.MAGENTA}{feedback_msg}{Style.RESET_ALL}"
     )
 
     agent = AGENTS.get(agent_name)
@@ -108,37 +112,44 @@ async def send_feedback_and_retry(
         )
         return None
 
-    # Send the feedback prompt and await the corrected response
-    feedback_response = agent.generate_reply(feedback_prompt)
+    try:
+        # Send the feedback prompt and await the corrected response
+        feedback_response = agent.generate_reply(messages=feedback_msg)
 
-    # Check if response is a coroutine and await it if necessary
-    if hasattr(feedback_response, "__await__"):
-        feedback_response = await feedback_response
+        # Check if response is a coroutine and await it if necessary
+        if hasattr(feedback_response, "__await__"):
+            feedback_response = await feedback_response
 
-    logger.debug(
-        f"{Fore.MAGENTA}[FEEDBACK RESPONSE] Raw response from {Fore.BLUE}{agent_name}: {Fore.GREEN}{feedback_response}{Style.RESET_ALL}"
-    )
-
-    parsed_feedback = await parse_response(agent_name, feedback_response)
-
-    if parsed_feedback and isinstance(parsed_feedback, dict):
-        # Return the parsed feedback directly instead of extracted keys
         logger.debug(
-            f"{Fore.MAGENTA}[PARSED FEEDBACK] Parsed feedback returned: {Fore.BLUE}{parsed_feedback}{Style.RESET_ALL}"
+            f"{Fore.MAGENTA}[FEEDBACK RESPONSE] Raw response from {Fore.BLUE}{agent_name}: {Fore.GREEN}{feedback_response}{Style.RESET_ALL}"
         )
-        return parsed_feedback
-    else:
+
+        parsed_feedback = await parse_response(agent_name, feedback_response)
+
+        if parsed_feedback and isinstance(parsed_feedback, dict):
+            # Return the parsed feedback directly instead of extracted keys
+            logger.debug(
+                f"{Fore.MAGENTA}[PARSED FEEDBACK] Parsed feedback returned: {Fore.BLUE}{parsed_feedback}{Style.RESET_ALL}"
+            )
+            return parsed_feedback
+        else:
+            logger.error(
+                f"{Fore.RED}[ERROR] Invalid feedback format from {Fore.BLUE}{agent_name}. Feedback response: {parsed_feedback}{Style.RESET_ALL}"
+            )
+            return None
+    except Exception as e:
         logger.error(
-            f"{Fore.RED}[ERROR] Invalid feedback format from {Fore.BLUE}{agent_name}. Feedback response: {parsed_feedback}{Style.RESET_ALL}"
+            f"{Fore.RED}[UNEXPECTED EXCEPTION] Error during feedback and retry with {agent_name}: {e}{Style.RESET_ALL}"
         )
+        logger.error(traceback.format_exc())
         return None
 
 
 async def get_agent_response(
-    agent_name: str,
-    prompt: List[Dict[str, str]],
-    expected_keys: List[str],
-    max_retries: int = MAX_RETRIES,
+        agent_name: str,
+        msg: List[Dict[str, str]],
+        expected_keys: List[str],
+        max_retries: int = MAX_RETRIES,
 ) -> Optional[dict]:
     """
     Sends a prompt to the specified agent and retrieves the expected keys from the response.
@@ -152,24 +163,14 @@ async def get_agent_response(
         )
         return None
 
-    # Map custom roles to valid OpenAI roles
-    for message in prompt:
-        if message["role"] not in ["system", "user", "assistant"]:
-            if message["role"] == agent_name:
-                # Agent's own messages are 'assistant'
-                message["role"] = "assistant"
-            else:
-                # Other messages are from the user
-                message["role"] = "user"
-
     retries = 0
     while retries < max_retries:
         response = ""
         try:
             logger.debug(
-                f"{Fore.MAGENTA}[ATTEMPT {retries + 1}/{max_retries}] Sending prompt to {Fore.BLUE}{agent_name}: {Fore.MAGENTA}{prompt}{Style.RESET_ALL}"
+                f"{Fore.MAGENTA}[ATTEMPT {retries + 1}/{max_retries}] Sending prompt to {Fore.BLUE}{agent_name}: {Fore.MAGENTA}{msg}{Style.RESET_ALL}"
             )
-            response = agent.generate_reply(messages=prompt)
+            response = agent.generate_reply(messages=msg)
 
             # Check if response is a coroutine and await it if necessary
             if hasattr(response, "__await__"):
@@ -207,6 +208,12 @@ async def get_agent_response(
             logger.error(
                 f"{Fore.RED}[EXCEPTION] {str(e)} Error handling response from {Fore.BLUE}{agent_name} on attempt {retries + 1}.{Style.RESET_ALL}"
             )
+        except Exception as e:
+            # Log unexpected exceptions with traceback
+            logger.error(
+                f"{Fore.RED}[UNEXPECTED EXCEPTION] Error during agent response from {Fore.BLUE}{agent_name}: {e}{Style.RESET_ALL}"
+            )
+            logger.error(traceback.format_exc())
 
         # If there was an error, provide feedback and retry
         retries += 1
@@ -215,7 +222,7 @@ async def get_agent_response(
         )
 
         # Use the send_feedback_and_retry function to ask the agent to correct its response
-        extracted = await send_feedback_and_retry(agent_name, expected_keys, response)
+        extracted = await send_feedback_and_retry(agent_name, expected_keys)
 
         if extracted:
             logger.debug(
@@ -284,26 +291,18 @@ def extract_json_from_text(response: str) -> Optional[str]:
 
 
 def build_conversation_context(
-    conversation_history: List[Dict[str, str]],
-    user_preferences: Dict[str, str],
-    current_character: Dict[str, Any],  # Added current_character argument
+        user_preferences: Dict[str, str],
+        current_character: Dict[str, Any],
 ) -> str:
     """
     Builds a conversation context string from the conversation history, user preferences, and character details.
     """
     context = ""
-    # Add conversation history
-    for message in conversation_history:
-        if "user" in message:
-            context += f"User: {message['user']}\n"
-        if "dm" in message:
-            context += f"DM: {message['dm']}\n"
-
     # Add user preferences
     preferences_text = "\n".join(
         [f"- {key}: {value}" for key, value in user_preferences.items()]
     )
-    context += f"**User Preferences:**\n{preferences_text}\n"
+    context += f"User Preferences:\n{preferences_text}\n"
 
     # Add current character details
     if current_character:
@@ -313,13 +312,13 @@ def build_conversation_context(
                 for key, value in current_character.items()
             ]
         )
-        context += f"\n**Character Details:**\n{character_details}\n"
+        context += f"\nCharacter Details:\n{character_details}\n"
 
     return context
 
 
 async def handle_storyline_feedback(
-    dm_prompt: List[Dict[str, str]], max_retries: int = MAX_RETRIES
+        dm_msg: List[Dict[str, str]], max_retries: int = MAX_RETRIES
 ) -> Optional[Dict[str, Any]]:
     """
     Handles inconsistent storyline by sending the inconsistency prompt to the DM Agent.
@@ -330,17 +329,14 @@ async def handle_storyline_feedback(
             f"{Fore.MAGENTA}[ATTEMPT {retries + 1}/{max_retries}] Handling storyline feedback.{Style.RESET_ALL}"
         )
 
-        dm_prompt_mapped = map_roles_in_prompt(dm_prompt, "DMAgent")
         revised_response = await get_agent_response(
-            "DMAgent", dm_prompt_mapped, ["dm_response"]
+            "DMAgent", dm_msg, ["dm_response"]
         )
 
         # Check if revised_response contains the expected keys or fallback to "raw_response"
         if revised_response and isinstance(revised_response, dict):
             dm_response_text = (
-                revised_response.get("dm_response")
-                or revised_response.get("raw_response")
-                or ""
+                    revised_response.get("dm_response")
             )
 
             logger.debug(
@@ -352,7 +348,7 @@ async def handle_storyline_feedback(
                 logger.debug(
                     f"{Fore.MAGENTA}[RESOLVED] Storyline inconsistency resolved with revised response.{Style.RESET_ALL}"
                 )
-                return revised_response  # Return the entire dict, not just the dm_response_text
+                return revised_response
 
         else:
             logger.warning(
@@ -364,265 +360,284 @@ async def handle_storyline_feedback(
     logger.error(
         f"{Fore.RED}[FAILURE] Max retries reached while handling inconsistent storyline. Could not resolve the issue.{Style.RESET_ALL}"
     )
-    return (
-        None  # Return None or an appropriate fallback value when retries are exhausted
-    )
-
-def map_roles_in_prompt(prompt: List[Dict[str, str]], agent_name: str) -> List[Dict[str, str]]:
-    """
-    Maps custom roles in the prompt to valid OpenAI roles.
-    """
-    for message in prompt:
-        if message["role"] not in ["system", "user", "assistant"]:
-            if message["role"] == agent_name:
-                message["role"] = "assistant"
-            else:
-                message["role"] = "user"
-    return prompt
+    return None
 
 # ============================
 # Main Function
 # ============================
+
 async def generate_gm_response(
-    user_input: str,
-    conversation_history: List[Dict[str, str]],
-    user_preferences: Dict[str, str],
-    storyline: str,
-    current_character: Dict[str, Any],
+        user_input: str,
+        conversation_history: List[Dict[str, str]],
+        user_preferences: Dict[str, str],
+        storyline: str,
+        current_character: Dict[str, Any],
 ) -> Dict[str, str]:
     """
     Manages the workflow for starting or continuing a campaign, including communication between agents.
     """
-    logger.debug(f"{Fore.MAGENTA}[START] Generating GM response.{Style.RESET_ALL}")
-    is_new_campaign = not conversation_history or len(conversation_history) == 0
-    context = build_conversation_context(
-        conversation_history, user_preferences, current_character
-    )
-    logger.debug(
-        f"{Fore.MAGENTA}[CONTEXT] Conversation context:\n{Fore.BLUE}{context}{Style.RESET_ALL}"
-    )
-
-    if not storyline:
-        storyline = ""
-
-    if is_new_campaign:
+    try:
         logger.debug(
-            f"{Fore.MAGENTA}[NEW CAMPAIGN] Starting a new campaign.{Style.RESET_ALL}"
+            f"{Fore.MAGENTA}[START] Generating GM response.{Style.RESET_ALL}"
         )
-        dm_prompt_content = create_campaign_prompt(user_input, context)
-        dm_prompt = [{"role": "system", "content": dm_prompt_content}]
-
-        dm_response = await get_agent_response("DMAgent", dm_prompt, ["dm_response"])
+        is_new_campaign = not conversation_history or len(conversation_history) == 0
+        context = build_conversation_context(user_preferences, current_character)
         logger.debug(
-            f"{Fore.MAGENTA}[EXTRACTED JSON] Extracted JSON from DM Response:\n{Fore.GREEN}{dm_response}{Style.RESET_ALL}"
-        )
-
-        if not dm_response:
-            logger.warning(
-                f"{Fore.YELLOW}[WARNING] No DM Agent response found.{Style.RESET_ALL}"
-            )
-            return {
-                "dm_response": "Error starting a new campaign.",
-                "full_storyline": storyline,
-            }
-
-        # Check if dm_response contains expected keys, else fallback to "raw_response"
-        if isinstance(dm_response, dict):
-            dm_response_text = (
-                dm_response.get("dm_response") or dm_response.get("raw_response") or ""
-            )
-        else:
-            logger.error(
-                f"{Fore.RED}[ERROR] Could not generate campaign. Unknown error.{Style.RESET_ALL}"
-            )
-            return {
-                "dm_response": "Error starting a new campaign.",
-                "full_storyline": storyline,
-            }
-        logger.debug(
-            f"{Fore.MAGENTA}[DM RESPONSE] Extracted DM Agent response:\n{Fore.GREEN}{dm_response_text}{Style.RESET_ALL}"
-        )
-
-        storyteller_prompt_content = validate_storyline_prompt(
-            context, dm_response_text
-        )
-        storyteller_prompt = [
-            {"role": "system", "content": storyteller_prompt_content}
-        ]
-
-        storyteller_response = await get_agent_response(
-            "StorytellerAgent", storyteller_prompt, ["feedback"]
-        )
-        logger.debug(
-            f"{Fore.MAGENTA}[STORYTELLER RESPONSE] Parsed Storyteller Agent response:\n{Fore.GREEN}{storyteller_response}{Style.RESET_ALL}"
-        )
-
-        # Only proceed if feedback is present
-        if storyteller_response and isinstance(storyteller_response, dict):
-            feedback = storyteller_response.get("feedback", "")
-
-            logger.debug(
-                f"{Fore.MAGENTA}[STORYTELLER FEEDBACK] Feedback received: {feedback}{Style.RESET_ALL}"
-            )
-
-            # Create a DM revision prompt based on the feedback
-            dm_feedback_prompt_content = revise_campaign_prompt(
-                context, dm_response_text, feedback
-            )
-            dm_feedback_prompt = [
-                {"role": "system", "content": dm_feedback_prompt_content}
-            ]
-
-            # Get the response from handle_storyline_feedback
-            dm_revision_response = await handle_storyline_feedback(dm_feedback_prompt)
-
-            # Extract revised response
-            if isinstance(dm_revision_response, dict):
-                dm_revision_text = dm_revision_response.get("dm_response", "")
-                if not dm_revision_text:
-                    logger.error(
-                        f"{Fore.RED}[ERROR] Missing dm_response in the revised response from DMAgent.{Style.RESET_ALL}"
-                    )
-            else:
-                dm_revision_text = ""
-                logger.error(
-                    f"{Fore.RED}[ERROR] Invalid or missing revised response from DMAgent.{Style.RESET_ALL}"
-                )
-
-            logger.debug(
-                f"{Fore.MAGENTA}[REVISED STORYLINE] Revised storyline after feedback: {dm_revision_text}{Style.RESET_ALL}"
-            )
-
-            # Ensure the revised storyline is appended only if valid
-            if dm_revision_text:
-                storyline += "\n\n" + dm_revision_text
-
-            return {
-                "dm_response": dm_revision_text
-                or "Error in processing the revision response.",
-                "full_storyline": storyline,
-            }
-
-        else:
-            logger.debug(
-                f"{Fore.MAGENTA}[NO FEEDBACK] No feedback required from Storyteller. Continuing with the new storyline.{Style.RESET_ALL}"
-            )
-            storyline += "\n\n" + dm_response_text
-            return {"dm_response": dm_response_text, "full_storyline": storyline}
-
-    else:
-        logger.debug(
-            f"{Fore.MAGENTA}[ONGOING CAMPAIGN] Ongoing campaign detected.{Style.RESET_ALL}"
+            f"{Fore.MAGENTA}[CONTEXT] Conversation context:\n{Fore.BLUE}{context}{Style.RESET_ALL}"
         )
 
         if not storyline:
-            return {
-                "dm_response": "Error continuing the campaign. No storyline found.",
-                "full_storyline": "",
-            }
+            storyline = ""
 
-        # Create the DM prompt for continuing the campaign
-        dm_continue_prompt_content = continue_campaign_prompt(
-            context, storyline, user_input
-        )
-        dm_continue_prompt = [
-            {"role": "system", "content": dm_continue_prompt_content}
-        ]
-
-        # Get DM Agent's response
-        dm_response = await get_agent_response(
-            "DMAgent", dm_continue_prompt, ["dm_response"]
-        )
-        logger.debug(
-            f"{Fore.MAGENTA}[DM RESPONSE] Raw DM Agent response for continuing campaign:\n{Fore.GREEN}{dm_response}{Style.RESET_ALL}"
-        )
-
-        if not dm_response:
-            return {
-                "dm_response": "Error continuing the campaign.",
-                "full_storyline": storyline,
-            }
-
-        # Extract dm_response
-        if isinstance(dm_response, dict):
-            dm_response_text = dm_response.get("dm_response", "")
-        else:
-            logger.error(
-                f"{Fore.RED}[ERROR] Could not continue the campaign. Unknown error.{Style.RESET_ALL}"
-            )
-            return {
-                "dm_response": "Error continuing the campaign.",
-                "full_storyline": storyline,
-            }
-
-        logger.debug(
-            f"{Fore.MAGENTA}[STORYLINE] New storyline for ongoing campaign (pending validation):\n{Fore.GREEN}{dm_response_text}{Style.RESET_ALL}"
-        )
-
-        # Validate the new storyline using the StorytellerAgent before appending it
-        storyteller_continue_prompt_content = validate_storyline_prompt(
-            context, dm_response_text
-        )
-        storyteller_continue_prompt = [
-            {"role": "system", "content": storyteller_continue_prompt_content}
-        ]
-
-        storyteller_response = await get_agent_response(
-            "StorytellerAgent", storyteller_continue_prompt, ["feedback"]
-        )
-        logger.debug(
-            f"{Fore.MAGENTA}[STORYTELLER RESPONSE] Parsed Storyteller Agent response:\n{Fore.GREEN}{storyteller_response}{Style.RESET_ALL}"
-        )
-
-        # Handle Storyteller feedback
-        if storyteller_response and isinstance(storyteller_response, dict):
-            feedback = storyteller_response.get("feedback", "")
-
+        if is_new_campaign:
             logger.debug(
-                f"{Fore.MAGENTA}[STORYTELLER FEEDBACK] Feedback received: {feedback}{Style.RESET_ALL}"
+                f"{Fore.MAGENTA}[NEW CAMPAIGN] Starting a new campaign.{Style.RESET_ALL}"
+            )
+            dm_prompt_content = create_campaign_prompt(user_input, context)
+            dm_msg = [{"content": dm_prompt_content, "role": "user"}]
+
+            dm_response = await get_agent_response(
+                "DMAgent", dm_msg, ["dm_response"]
+            )
+            logger.debug(
+                f"{Fore.MAGENTA}[EXTRACTED JSON] Extracted JSON from DM Response:\n{Fore.GREEN}{dm_response}{Style.RESET_ALL}"
             )
 
-            # Create a DM revision prompt based on the feedback (whether positive or negative)
-            dm_feedback_prompt_content = revise_campaign_prompt(
-                context, dm_response_text, feedback
+            if not dm_response:
+                logger.warning(
+                    f"{Fore.YELLOW}[WARNING] No DM Agent response found.{Style.RESET_ALL}"
+                )
+                return {
+                    "dm_response": "Error starting a new campaign.",
+                    "full_storyline": storyline,
+                }
+
+            # Check if dm_response contains expected keys, else fallback to "raw_response"
+            if isinstance(dm_response, dict):
+                dm_response_text = (
+                        dm_response.get("dm_response")
+                )
+            else:
+                logger.error(
+                    f"{Fore.RED}[ERROR] Could not generate campaign. Unknown error.{Style.RESET_ALL}"
+                )
+                return {
+                    "dm_response": "Error starting a new campaign.",
+                    "full_storyline": storyline,
+                }
+            logger.debug(
+                f"{Fore.MAGENTA}[DM RESPONSE] Extracted DM Agent response:\n{Fore.GREEN}{dm_response_text}{Style.RESET_ALL}"
             )
-            dm_feedback_prompt = [
-                {"role": "system", "content": dm_feedback_prompt_content}
+
+            storyteller_prompt_content = validate_storyline_prompt(
+                context, dm_response_text
+            )
+            storyteller_msg = [
+                {"content": storyteller_prompt_content,"role": "system"}
             ]
 
-            # Get revised response for the storyline based on the feedback
-            dm_revision_response = await handle_storyline_feedback(dm_feedback_prompt)
-
-            # Extract revised response
-            if isinstance(dm_revision_response, dict):
-                dm_revision_text = dm_revision_response.get("dm_response", "")
-                if not dm_revision_text:
-                    logger.error(
-                        f"{Fore.RED}[ERROR] Missing dm_response in the revised response from DMAgent.{Style.RESET_ALL}"
-                    )
-            else:
-                dm_revision_text = ""
-                logger.error(
-                    f"{Fore.RED}[ERROR] Invalid or missing revised response from DMAgent.{Style.RESET_ALL}"
-                )
-
+            storyteller_response = await get_agent_response(
+                "StorytellerAgent", storyteller_msg, ["feedback"]
+            )
             logger.debug(
-                f"{Fore.MAGENTA}[REVISED STORYLINE] Revised storyline after feedback: {dm_revision_text}{Style.RESET_ALL}"
+                f"{Fore.MAGENTA}[STORYTELLER RESPONSE] Parsed Storyteller Agent response:\n{Fore.GREEN}{storyteller_response}{Style.RESET_ALL}"
             )
 
-            # Ensure the revised storyline is appended only if valid
-            if dm_revision_text:
-                storyline += "\n\n" + dm_revision_text
+            # Only proceed if feedback is present
+            if storyteller_response and isinstance(storyteller_response, dict):
+                feedback = storyteller_response.get("feedback", "")
 
-            return {
-                "dm_response": dm_revision_text
-                or "Error in processing the revision response.",
-                "full_storyline": storyline,
-            }
+                logger.debug(
+                    f"{Fore.MAGENTA}[STORYTELLER FEEDBACK] Feedback received: {feedback}{Style.RESET_ALL}"
+                )
+
+                # Skip revision if feedback is empty
+                if feedback == "":
+                    logger.debug(
+                        f"{Fore.MAGENTA}[NO FEEDBACK NEEDED] Storyline aligns well; skipping revision.{Style.RESET_ALL}"
+                    )
+                    storyline += "\n\n" + dm_response_text
+                    return {"dm_response": dm_response_text, "full_storyline": storyline}
+
+                # Create a DM revision prompt based on the feedback
+                dm_feedback_prompt_content = revise_campaign_prompt(
+                    context, dm_response_text, feedback
+                )
+                dm_feedback_msg = [
+                    {"content": dm_feedback_prompt_content, "role": "system"}
+                ]
+
+                # Get the response from handle_storyline_feedback
+                dm_revision_response = await handle_storyline_feedback(
+                    dm_feedback_msg
+                )
+
+                # Extract revised response
+                if isinstance(dm_revision_response, dict):
+                    dm_revision_text = dm_revision_response.get("dm_response", "")
+                    if not dm_revision_text:
+                        logger.error(
+                            f"{Fore.RED}[ERROR] Missing dm_response in the revised response from DMAgent.{Style.RESET_ALL}"
+                        )
+                else:
+                    dm_revision_text = ""
+                    logger.error(
+                        f"{Fore.RED}[ERROR] Invalid or missing revised response from DMAgent.{Style.RESET_ALL}"
+                    )
+
+                logger.debug(
+                    f"{Fore.MAGENTA}[REVISED STORYLINE] Revised storyline after feedback: {dm_revision_text}{Style.RESET_ALL}"
+                )
+
+                # Ensure the revised storyline is appended only if valid
+                if len(dm_revision_text) > 0:
+                    storyline += "\n\n" + dm_revision_text
+
+                return {
+                    "dm_response": dm_revision_text
+                                   or "Error in processing the revision response.",
+                    "full_storyline": storyline,
+                }
+
+            else:
+                logger.debug(
+                    f"{Fore.MAGENTA}[NO FEEDBACK] No feedback required from Storyteller. Continuing with the new storyline.{Style.RESET_ALL}"
+                )
+                storyline += "\n\n" + dm_response_text
+                return {"dm_response": dm_response_text, "full_storyline": storyline}
 
         else:
             logger.debug(
-                f"{Fore.MAGENTA}[NO FEEDBACK] No feedback required from Storyteller. Appending the new storyline.{Style.RESET_ALL}"
+                f"{Fore.MAGENTA}[ONGOING CAMPAIGN] Ongoing campaign detected.{Style.RESET_ALL}"
             )
-            storyline += "\n\n" + dm_response_text
-            return {"dm_response": dm_response_text, "full_storyline": storyline}
+
+            if not storyline:
+                return {
+                    "dm_response": "Error continuing the campaign. No storyline found.",
+                    "full_storyline": "",
+                }
+
+            # Create the DM prompt for continuing the campaign
+            dm_continue_prompt_content = continue_campaign_prompt(
+                context, storyline, user_input
+            )
+            dm_continue_msg = [
+                {"content": dm_continue_prompt_content,"role": "user"}
+            ]
+
+            # Get DM Agent's response
+            dm_response = await get_agent_response(
+                "DMAgent", dm_continue_msg, ["dm_response"]
+            )
+            logger.debug(
+                f"{Fore.MAGENTA}[DM RESPONSE] Raw DM Agent response for continuing campaign:\n{Fore.GREEN}{dm_response}{Style.RESET_ALL}"
+            )
+
+            if not dm_response:
+                return {
+                    "dm_response": "Error continuing the campaign.",
+                    "full_storyline": storyline,
+                }
+
+            # Extract dm_response
+            if isinstance(dm_response, dict):
+                dm_response_text = dm_response.get("dm_response", "")
+            else:
+                logger.error(
+                    f"{Fore.RED}[ERROR] Could not continue the campaign. Unknown error.{Style.RESET_ALL}"
+                )
+                return {
+                    "dm_response": "Error continuing the campaign.",
+                    "full_storyline": storyline,
+                }
+
+            logger.debug(
+                f"{Fore.MAGENTA}[STORYLINE] New storyline for ongoing campaign (pending validation):\n{Fore.GREEN}{dm_response_text}{Style.RESET_ALL}"
+            )
+
+            # Validate the new storyline using the StorytellerAgent before appending it
+            storyteller_continue_prompt_content = validate_storyline_prompt(
+                context, dm_response_text
+            )
+            storyteller_continue_msg = [
+                {"content": storyteller_continue_prompt_content, "role": "system"}
+            ]
+
+            storyteller_response = await get_agent_response(
+                "StorytellerAgent", storyteller_continue_msg, ["feedback"]
+            )
+            logger.debug(
+                f"{Fore.MAGENTA}[STORYTELLER RESPONSE] Parsed Storyteller Agent response:\n{Fore.GREEN}{storyteller_response}{Style.RESET_ALL}"
+            )
+
+            # Handle Storyteller feedback
+            if storyteller_response and isinstance(storyteller_response, dict):
+                feedback = storyteller_response.get("feedback", "")
+
+                logger.debug(
+                    f"{Fore.MAGENTA}[STORYTELLER FEEDBACK] Feedback received: {feedback}{Style.RESET_ALL}"
+                )
+
+                # Skip revision if feedback is empty
+                if feedback == "":
+                    logger.debug(
+                        f"{Fore.MAGENTA}[NO FEEDBACK NEEDED] Storyline aligns well; skipping revision.{Style.RESET_ALL}"
+                    )
+                    storyline += "\n\n" + dm_response_text
+                    return {"dm_response": dm_response_text, "full_storyline": storyline}
+
+                # Create a DM revision prompt based on the feedback (whether positive or negative)
+                dm_feedback_prompt_content = revise_campaign_prompt(
+                    context, dm_response_text, feedback
+                )
+                dm_feedback_msg = [
+                    {"content": dm_feedback_prompt_content,"role": "system"}
+                ]
+
+                # Get revised response for the storyline based on the feedback
+                dm_revision_response = await handle_storyline_feedback(
+                    dm_feedback_msg
+                )
+
+                # Extract revised response
+                if isinstance(dm_revision_response, dict):
+                    dm_revision_text = dm_revision_response.get("dm_response", "")
+                    if not dm_revision_text:
+                        logger.error(
+                            f"{Fore.RED}[ERROR] Missing dm_response in the revised response from DMAgent.{Style.RESET_ALL}"
+                        )
+                else:
+                    dm_revision_text = ""
+                    logger.error(
+                        f"{Fore.RED}[ERROR] Invalid or missing revised response from DMAgent.{Style.RESET_ALL}"
+                    )
+
+                logger.debug(
+                    f"{Fore.MAGENTA}[REVISED STORYLINE] Revised storyline after feedback: {dm_revision_text}{Style.RESET_ALL}"
+                )
+
+                # Ensure the revised storyline is appended only if valid
+                if len(dm_revision_text) > 0:
+                    storyline += "\n\n" + dm_revision_text
+
+                return {
+                    "dm_response": dm_revision_text
+                                   or "Error in processing the revision response.",
+                    "full_storyline": storyline,
+                }
+
+            else:
+                logger.debug(
+                    f"{Fore.MAGENTA}[NO FEEDBACK] No feedback required from Storyteller. Appending the new storyline.{Style.RESET_ALL}"
+                )
+                storyline += "\n\n" + dm_response_text
+                return {"dm_response": dm_response_text, "full_storyline": storyline}
+    except Exception as e:
+        logger.error(
+            f"{Fore.RED}[ERROR] Error in GM response generation: {e}{Style.RESET_ALL}"
+        )
+        logger.error(traceback.format_exc())
+        return {
+            "dm_response": "Error generating GM response.",
+            "full_storyline": storyline,
+        }

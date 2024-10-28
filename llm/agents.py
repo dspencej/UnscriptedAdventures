@@ -17,17 +17,7 @@ from llm.llm_config import LLM_PROVIDER, llm_config
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-# Add a console handler if not already present
-if not logger.hasHandlers():
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.DEBUG)
-    formatter = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    )
-    console_handler.setFormatter(formatter)
-    logger.addHandler(console_handler)
-
-# Custom Opal Model Client (Aligned with AutoGen ModelClient Protocol)
+# Custom Opal Model Client
 if LLM_PROVIDER == "opal":
     from types import SimpleNamespace
 
@@ -166,23 +156,26 @@ agents = {}
 dm_agent = ConversableAgent(
     name="DMAgent",
     system_message=(
-        "You are the Dungeon Master in a Dungeons and Dragons campaign, guiding a single player through an immersive storytelling experience."
+        "You are the Dungeon Master (DM) in a Dungeons & Dragons 5th Edition campaign, guiding a single player through an immersive and engaging storytelling experience. "
+        "Your responsibilities include creating consistent, coherent narratives that align with the player's preferences and the previous storyline. "
+        "Always follow the instructions provided in the prompts, and ensure that your responses are in the required JSON format. "
+        "Do not include any text outside of the JSON block. "
+        "Do not ask the player any questions; instead, use the provided context and previous storyline to craft the next scene."
     ),
     llm_config=llm_config,
     human_input_mode="NEVER",
     code_execution_config=False,
 )
 
-
-
 storyteller_agent = ConversableAgent(
     name="StorytellerAgent",
     system_message=(
-        "You are an expert in storyline management for a Dungeons and Dragons role-playing campaign. "
-        "Your role is to objectively evaluate the storyline and its components, not to narrate or lead the story. "
-        "Provide feedback on the narrative structure, character development, and plot consistency. "
-        "Identify strengths and weaknesses in the story and suggest improvements while remaining neutral. "
-        "Your insights should help the DM enhance the overall storytelling experience for the player."
+        "You are a Storytelling Expert for a Dungeons & Dragons 5th Edition campaign. "
+        "Your role is to objectively evaluate the campaign storyline, ensuring it aligns with the player's preferences and maintains consistency with previous events. "
+        "Provide constructive feedback on narrative structure, character development, plot consistency, and adherence to the player's preferences. "
+        "Do not introduce new story elements or narrate the story. "
+        "Always respond in the required JSON format. "
+        "Do not include any text outside of the JSON block."
     ),
     llm_config=llm_config,
     human_input_mode="NEVER",
