@@ -16,7 +16,7 @@
 
 /* General Body Styling */
 body {
-    font-family: var(--font-family);
+    font-family: var(--font-family), serif;
     background-color: var(--background-color);
     background-image: url('https://www.transparenttextures.com/patterns/old-mathematics.png');
     color: var(--secondary-color);
@@ -47,7 +47,7 @@ body {
 
 /* Heading (H1) Styling */
 h1 {
-    font-family: var(--heading-font-family);
+    font-family: var(--heading-font-family), serif;
     text-align: center;
     color: var(--primary-color);
     font-size: 3.5rem; /* Larger font size for h1 */
@@ -57,7 +57,7 @@ h1 {
 }
 
 h2 {
-    font-family: var(--heading-font-family);
+    font-family: var(--heading-font-family), serif;
     color: var(--primary-color);
     font-size: 2.75rem; /* Larger font size for h2 */
     margin-bottom: 15px;
@@ -65,7 +65,7 @@ h2 {
 }
 
 h3 {
-    font-family: var(--heading-font-family);
+    font-family: var(--heading-font-family), serif;
     color: var(--primary-color);
     font-size: 2.25rem; /* Larger font size for h3 */
     margin-bottom: 10px;

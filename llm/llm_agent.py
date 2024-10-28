@@ -98,7 +98,7 @@ async def send_feedback_and_retry(
     feedback_msg_content = format_feedback_prompt(expected_keys)
 
     # Format the feedback prompt with 'system' role to instruct the agent
-    feedback_msg = [{"content": feedback_msg_content,"role": "system", }]
+    feedback_msg = [{"content": feedback_msg_content, "role": "system", }]
 
     logger.debug(
         f"{Fore.MAGENTA}[FEEDBACK] Sending feedback to {Fore.BLUE}{agent_name}: {Fore.MAGENTA}{feedback_msg}{Style.RESET_ALL}"

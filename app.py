@@ -444,7 +444,6 @@ def delete_character(character_id):
         return jsonify({"status": "error", "message": "Error deleting character."}), 500
 
 
-
 @app.route("/save_current_character", methods=["POST"])
 def save_current_character():
     try:
