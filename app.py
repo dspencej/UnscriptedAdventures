@@ -736,7 +736,7 @@ def thank_you():
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
     with app.app_context():
         # Check if character data is already populated
         if (

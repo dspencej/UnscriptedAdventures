@@ -3,8 +3,6 @@ import os
 
 # Select LLM provider: 'ollama', 'opal', or 'openai'
 LLM_PROVIDER = "openai"
-# LLM_PROVIDER = "opal"
-# LLM_PROVIDER = "ollama"
 
 # Common LLM configuration
 OLLAMA_MODEL = "llama3:latest"
@@ -15,8 +13,9 @@ OPAL_MODEL = "meta-llama/Meta-Llama-3-70B-Instruct"
 OPAL_API_URL = "https://opal.jhuapl.edu/v2/chat/completions"
 OPAL_API_KEY = os.getenv("OPAL_CUI_TOKEN")
 
-OPENAI_MODEL = "gpt-4"  # Or another OpenAI model like 'gpt-3.5-turbo'
-OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
+OPENAI_MODEL_3_5 = "gpt-3.5-turbo"
+OPENAI_MODEL_4 = "gpt-4"
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")  # Store API key once
 
 if LLM_PROVIDER == "ollama":
     CONFIG_LIST = [
@@ -31,6 +30,7 @@ if LLM_PROVIDER == "ollama":
         "config_list": CONFIG_LIST,
         "timeout": 1000,
     }
+
 elif LLM_PROVIDER == "opal":
     CONFIG_LIST = [
         {
@@ -52,27 +52,47 @@ elif LLM_PROVIDER == "opal":
         "config_list": CONFIG_LIST,
         "timeout": 1000,
     }
+
 elif LLM_PROVIDER == "openai":
-    CONFIG_LIST = [
+    # Configuration for GPT-3.5
+    CONFIG_LIST_3_5 = [
         {
-            "model": "gpt-4",  # Model identifier
-            "api_key": os.environ.get("OPENAI_API_KEY"),  # OpenAI API key
-            "api_type": "openai",  # Specifies OpenAI API (default)
-            "base_url": "https://api.openai.com/v1",  # OpenAI API base URL
-            "n": 1,  # Number of completions to generate
-            "max_tokens": 2048,  # Max tokens per response
-            "temperature": 0.7,  # Response creativity level
-            "top_p": 0.9,  # Probability threshold for token inclusion
-            # Optional advanced parameters
-            "cache": None,  # Optional: provide a cache object if caching responses
-            "context": {},  # Optional: context data for templated messages
-            "filter_func": None,  # Optional: custom function for filtering responses
-            "allow_format_str_template": False,  # Optional: if using format string templates
+            "model": OPENAI_MODEL_3_5,
+            "api_key": OPENAI_API_KEY,
+            "api_type": "openai",
+            "base_url": "https://api.openai.com/v1",
+            "n": 1,
+            "max_tokens": 2048,
+            "temperature": 0.7,
+            "top_p": 0.9,
         }
     ]
-    llm_config = {
-        "config_list": CONFIG_LIST,
+
+    # Configuration for GPT-4
+    CONFIG_LIST_4 = [
+        {
+            "model": OPENAI_MODEL_4,
+            "api_key": OPENAI_API_KEY,
+            "api_type": "openai",
+            "base_url": "https://api.openai.com/v1",
+            "n": 1,
+            "max_tokens": 2048,
+            "temperature": 0.7,
+            "top_p": 0.9,
+        }
+    ]
+
+    # Assign configurations
+    llm_config_ST = {
+        "config_list": CONFIG_LIST_3_5,
         "timeout": 1000,
     }
+    llm_config_DM = {
+        "config_list": CONFIG_LIST_4,
+        "timeout": 1000,
+    }
+    # Set `llm_config` to one of the openai configs to ensure backward compatibility
+    llm_config = llm_config_DM
+
 else:
     raise ValueError(f"Unknown LLM_PROVIDER: {LLM_PROVIDER}")
