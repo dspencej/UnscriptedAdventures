@@ -2,7 +2,7 @@
 import os
 
 # Select LLM provider: 'ollama', 'opal', or 'openai'
-LLM_PROVIDER = "openai"
+LLM_PROVIDER = "ollama"
 
 # Common LLM configuration
 OLLAMA_MODEL = "llama3:latest"
@@ -30,6 +30,8 @@ if LLM_PROVIDER == "ollama":
         "config_list": CONFIG_LIST,
         "timeout": 1000,
     }
+    llm_config_DM = None
+    llm_config_ST = None
 
 elif LLM_PROVIDER == "opal":
     CONFIG_LIST = [
@@ -52,6 +54,8 @@ elif LLM_PROVIDER == "opal":
         "config_list": CONFIG_LIST,
         "timeout": 1000,
     }
+    llm_config_DM = None
+    llm_config_ST = None
 
 elif LLM_PROVIDER == "openai":
     # Configuration for GPT-3.5
@@ -91,8 +95,7 @@ elif LLM_PROVIDER == "openai":
         "config_list": CONFIG_LIST_4,
         "timeout": 1000,
     }
-    # Set `llm_config` to one of the openai configs to ensure backward compatibility
-    llm_config = llm_config_DM
+    llm_config = None
 
 else:
     raise ValueError(f"Unknown LLM_PROVIDER: {LLM_PROVIDER}")
