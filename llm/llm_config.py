@@ -2,7 +2,7 @@
 import os
 
 # Select LLM provider: 'ollama', 'opal', or 'openai'
-LLM_PROVIDER = "ollama"
+LLM_PROVIDER = "openai"
 
 # Common LLM configuration
 OLLAMA_MODEL = "llama3:latest"
