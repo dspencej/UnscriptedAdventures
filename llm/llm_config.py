@@ -1,73 +1,50 @@
 # llm/llm_config.py
+
 import os
+from typing import Dict, Any
 
-# Select LLM provider: 'ollama' or 'openai'
-LLM_PROVIDER = "openai"
+def get_llm_config(provider: str) -> Dict[str, Any]:
+    """
+    Retrieves the LLM configuration based on the provider.
 
-# Common LLM configuration
-OLLAMA_MODEL = "llama3:latest"
-OLLAMA_BASE_URL = "http://localhost:11434/v1"  # Default Ollama API endpoint
-OLLAMA_API_KEY = "ollama"
-
-OPENAI_MODEL_3_5 = "gpt-3.5-turbo"
-OPENAI_MODEL_4 = "gpt-4"
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")  # Store API key once
-
-if LLM_PROVIDER == "ollama":
-    CONFIG_LIST = [
-        {
-            "model": OLLAMA_MODEL,
-            "base_url": OLLAMA_BASE_URL,
-            "api_key": OLLAMA_API_KEY,
-            "price": [0, 0],
+    :param provider: The LLM provider ('openai', 'ollama', etc.)
+    :return: Configuration dictionary for the specified LLM provider
+    """
+    if provider == "ollama":
+        config = {
+            "config_list": [
+                {
+                    "model": "llama3:latest",  # Default model for Ollama
+                    "base_url": "http://localhost:11434/v1",
+                    "api_key": "ollama",
+                    "price": [0, 0],
+                }
+            ],
+            "timeout": 1000,
         }
-    ]
-    llm_config = {
-        "config_list": CONFIG_LIST,
-        "timeout": 1000,
-    }
-    llm_config_DM = None
-    llm_config_ST = None
+        return config
 
-elif LLM_PROVIDER == "openai":
-    # Configuration for GPT-3.5
-    CONFIG_LIST_3_5 = [
-        {
-            "model": OPENAI_MODEL_3_5,
-            "api_key": OPENAI_API_KEY,
-            "api_type": "openai",
-            "base_url": "https://api.openai.com/v1",
-            "n": 1,
-            "max_tokens": 2048,
-            "temperature": 0.7,
-            "top_p": 0.9,
+    elif provider == "openai":
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            raise EnvironmentError("OPENAI_API_KEY not set in environment variables.")
+
+        config = {
+            "config_list": [
+                {
+                    "model": "gpt-4",  # You can set this to a default model
+                    "api_key": api_key,
+                    "api_type": "openai",
+                    "base_url": "https://api.openai.com/v1",
+                    "n": 1,
+                    "max_tokens": 2048,
+                    "temperature": 0.7,
+                    "top_p": 0.9,
+                }
+            ],
+            "timeout": 1000,
         }
-    ]
+        return config
 
-    # Configuration for GPT-4
-    CONFIG_LIST_4 = [
-        {
-            "model": OPENAI_MODEL_4,
-            "api_key": OPENAI_API_KEY,
-            "api_type": "openai",
-            "base_url": "https://api.openai.com/v1",
-            "n": 1,
-            "max_tokens": 2048,
-            "temperature": 0.7,
-            "top_p": 0.9,
-        }
-    ]
-
-    # Assign configurations
-    llm_config_ST = {
-        "config_list": CONFIG_LIST_3_5,
-        "timeout": 1000,
-    }
-    llm_config_DM = {
-        "config_list": CONFIG_LIST_4,
-        "timeout": 1000,
-    }
-    llm_config = None
-
-else:
-    raise ValueError(f"Unknown LLM_PROVIDER: {LLM_PROVIDER}")
+    else:
+        raise ValueError(f"Unknown LLM provider: {provider}")

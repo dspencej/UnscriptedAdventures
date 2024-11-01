@@ -1,6 +1,4 @@
-# ============================
-# Imports and Dependencies
-# ============================
+# llm/llm_agent.py
 
 import json
 import logging
@@ -10,7 +8,6 @@ from typing import Any, Dict, List, Optional
 import urllib3
 from colorama import Fore, Style
 
-from llm.agents import dm_agent, storyteller_agent
 from llm.prompts import (
     continue_campaign_prompt,
     create_campaign_prompt,
@@ -41,19 +38,6 @@ logger.setLevel(logging.DEBUG)
 # ============================
 
 MAX_RETRIES = 3  # Maximum number of retries for handling inconsistencies
-
-# ============================
-# Agent Registration
-# ============================
-
-AGENTS = {
-    "DMAgent": dm_agent,
-    "StorytellerAgent": storyteller_agent,
-    # Add more agents as needed in the future, e.g.:
-    # "LoreAgent": lore_agent,
-    # "CombatAgent": combat_agent,
-}
-
 
 # ============================
 # Helper Functions
@@ -89,7 +73,9 @@ async def parse_response(agent_name: str, response: str) -> Optional[Dict[str, A
 
 
 async def send_feedback_and_retry(
-        agent_name: str, expected_keys: List[str]
+        agent,
+        agent_name: str,
+        expected_keys: List[str]
 ) -> Optional[dict]:
     """
     Sends feedback to the agent and attempts to retrieve a corrected response.
@@ -104,11 +90,9 @@ async def send_feedback_and_retry(
         f"{Fore.MAGENTA}[FEEDBACK] Sending feedback to {Fore.BLUE}{agent_name}: {Fore.MAGENTA}{feedback_msg}{Style.RESET_ALL}"
     )
 
-    agent = AGENTS.get(agent_name)
-
     if not agent:
         logger.error(
-            f"{Fore.RED}[ERROR] Agent '{agent_name}' not found.{Style.RESET_ALL}"
+            f"{Fore.RED}[ERROR] Agent '{agent_name}' not provided.{Style.RESET_ALL}"
         )
         return None
 
@@ -146,6 +130,7 @@ async def send_feedback_and_retry(
 
 
 async def get_agent_response(
+        agent,
         agent_name: str,
         msg: List[Dict[str, str]],
         expected_keys: List[str],
@@ -155,11 +140,9 @@ async def get_agent_response(
     Sends a prompt to the specified agent and retrieves the expected keys from the response.
     Retries the process up to max_retries times if the response is not valid JSON or is missing expected keys.
     """
-    agent = AGENTS.get(agent_name)
-
     if not agent:
         logger.error(
-            f"{Fore.RED}[ERROR] Agent '{agent_name}' not found.{Style.RESET_ALL}"
+            f"{Fore.RED}[ERROR] Agent '{agent_name}' not provided.{Style.RESET_ALL}"
         )
         return None
 
@@ -222,7 +205,7 @@ async def get_agent_response(
         )
 
         # Use the send_feedback_and_retry function to ask the agent to correct its response
-        extracted = await send_feedback_and_retry(agent_name, expected_keys)
+        extracted = await send_feedback_and_retry(agent, agent_name, expected_keys)
 
         if extracted:
             logger.debug(
@@ -318,7 +301,7 @@ def build_conversation_context(
 
 
 async def handle_storyline_feedback(
-        dm_msg: List[Dict[str, str]], max_retries: int = MAX_RETRIES
+        dm_msg: List[Dict[str, str]], agent, agent_name: str, max_retries: int = MAX_RETRIES
 ) -> Optional[Dict[str, Any]]:
     """
     Handles inconsistent storyline by sending the inconsistency prompt to the DM Agent.
@@ -330,7 +313,10 @@ async def handle_storyline_feedback(
         )
 
         revised_response = await get_agent_response(
-            "DMAgent", dm_msg, ["dm_response"]
+            agent,
+            agent_name,
+            dm_msg,
+            ["dm_response"]
         )
 
         # Check if revised_response contains the expected keys or fallback to "raw_response"
@@ -340,7 +326,7 @@ async def handle_storyline_feedback(
             )
 
             logger.debug(
-                f"{Fore.MAGENTA}[SUCCESS] Received revised storyline from {Fore.BLUE}DMAgent{Style.RESET_ALL}: "
+                f"{Fore.MAGENTA}[SUCCESS] Received revised storyline from {Fore.BLUE}{agent_name}{Style.RESET_ALL}: "
                 f"{Fore.GREEN}{dm_response_text}{Style.RESET_ALL}"
             )
 
@@ -352,7 +338,7 @@ async def handle_storyline_feedback(
 
         else:
             logger.warning(
-                f"{Fore.YELLOW}[WARNING] Invalid or incomplete response from {Fore.BLUE}DMAgent{Style.RESET_ALL}. Retrying...{Style.RESET_ALL}"
+                f"{Fore.YELLOW}[WARNING] Invalid or incomplete response from {Fore.BLUE}{agent_name}{Style.RESET_ALL}. Retrying...{Style.RESET_ALL}"
             )
 
         retries += 1
@@ -372,6 +358,7 @@ async def generate_gm_response(
         user_preferences: Dict[str, str],
         storyline: str,
         current_character: Dict[str, Any],
+        agents: Dict[str, Any],
 ) -> Dict[str, str]:
     """
     Manages the workflow for starting or continuing a campaign, including communication between agents.
@@ -396,8 +383,21 @@ async def generate_gm_response(
             dm_prompt_content = create_campaign_prompt(user_input, context)
             dm_msg = [{"content": dm_prompt_content, "role": "user"}]
 
+            dm_agent = agents.get("DMAgent")
+            if not dm_agent:
+                logger.error(
+                    f"{Fore.RED}[ERROR] DMAgent not found in agents dictionary.{Style.RESET_ALL}"
+                )
+                return {
+                    "dm_response": "Error starting a new campaign.",
+                    "full_storyline": storyline,
+                }
+
             dm_response = await get_agent_response(
-                "DMAgent", dm_msg, ["dm_response"]
+                dm_agent,
+                "DMAgent",
+                dm_msg,
+                ["dm_response"]
             )
             logger.debug(
                 f"{Fore.MAGENTA}[EXTRACTED JSON] Extracted JSON from DM Response:\n{Fore.GREEN}{dm_response}{Style.RESET_ALL}"
@@ -429,15 +429,28 @@ async def generate_gm_response(
                 f"{Fore.MAGENTA}[DM RESPONSE] Extracted DM Agent response:\n{Fore.GREEN}{dm_response_text}{Style.RESET_ALL}"
             )
 
+            storyteller_agent = agents.get("StorytellerAgent")
+            if not storyteller_agent:
+                logger.error(
+                    f"{Fore.RED}[ERROR] StorytellerAgent not found in agents dictionary.{Style.RESET_ALL}"
+                )
+                return {
+                    "dm_response": "Error validating the storyline.",
+                    "full_storyline": storyline,
+                }
+
             storyteller_prompt_content = validate_storyline_prompt(
                 context, dm_response_text
             )
             storyteller_msg = [
-                {"content": storyteller_prompt_content,"role": "system"}
+                {"content": storyteller_prompt_content, "role": "system"}
             ]
 
             storyteller_response = await get_agent_response(
-                "StorytellerAgent", storyteller_msg, ["feedback"]
+                storyteller_agent,
+                "StorytellerAgent",
+                storyteller_msg,
+                ["feedback"]
             )
             logger.debug(
                 f"{Fore.MAGENTA}[STORYTELLER RESPONSE] Parsed Storyteller Agent response:\n{Fore.GREEN}{storyteller_response}{Style.RESET_ALL}"
@@ -469,7 +482,9 @@ async def generate_gm_response(
 
                 # Get the response from handle_storyline_feedback
                 dm_revision_response = await handle_storyline_feedback(
-                    dm_feedback_msg
+                    dm_feedback_msg,
+                    agents.get("DMAgent"),
+                    "DMAgent"
                 )
 
                 # Extract revised response
@@ -522,12 +537,25 @@ async def generate_gm_response(
                 context, storyline, user_input
             )
             dm_continue_msg = [
-                {"content": dm_continue_prompt_content,"role": "user"}
+                {"content": dm_continue_prompt_content, "role": "user"}
             ]
 
             # Get DM Agent's response
+            dm_agent = agents.get("DMAgent")
+            if not dm_agent:
+                logger.error(
+                    f"{Fore.RED}[ERROR] DMAgent not found in agents dictionary.{Style.RESET_ALL}"
+                )
+                return {
+                    "dm_response": "Error continuing the campaign.",
+                    "full_storyline": storyline,
+                }
+
             dm_response = await get_agent_response(
-                "DMAgent", dm_continue_msg, ["dm_response"]
+                dm_agent,
+                "DMAgent",
+                dm_continue_msg,
+                ["dm_response"]
             )
             logger.debug(
                 f"{Fore.MAGENTA}[DM RESPONSE] Raw DM Agent response for continuing campaign:\n{Fore.GREEN}{dm_response}{Style.RESET_ALL}"
@@ -556,6 +584,16 @@ async def generate_gm_response(
             )
 
             # Validate the new storyline using the StorytellerAgent before appending it
+            storyteller_agent = agents.get("StorytellerAgent")
+            if not storyteller_agent:
+                logger.error(
+                    f"{Fore.RED}[ERROR] StorytellerAgent not found in agents dictionary.{Style.RESET_ALL}"
+                )
+                return {
+                    "dm_response": "Error validating the storyline.",
+                    "full_storyline": storyline,
+                }
+
             storyteller_continue_prompt_content = validate_storyline_prompt(
                 context, dm_response_text
             )
@@ -564,7 +602,10 @@ async def generate_gm_response(
             ]
 
             storyteller_response = await get_agent_response(
-                "StorytellerAgent", storyteller_continue_msg, ["feedback"]
+                storyteller_agent,
+                "StorytellerAgent",
+                storyteller_continue_msg,
+                ["feedback"]
             )
             logger.debug(
                 f"{Fore.MAGENTA}[STORYTELLER RESPONSE] Parsed Storyteller Agent response:\n{Fore.GREEN}{storyteller_response}{Style.RESET_ALL}"
@@ -591,12 +632,14 @@ async def generate_gm_response(
                     context, dm_response_text, feedback
                 )
                 dm_feedback_msg = [
-                    {"content": dm_feedback_prompt_content,"role": "system"}
+                    {"content": dm_feedback_prompt_content, "role": "system"}
                 ]
 
                 # Get revised response for the storyline based on the feedback
                 dm_revision_response = await handle_storyline_feedback(
-                    dm_feedback_msg
+                    dm_feedback_msg,
+                    agents.get("DMAgent"),
+                    "DMAgent"
                 )
 
                 # Extract revised response

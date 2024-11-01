@@ -9,6 +9,25 @@
 </head>
 <body>
     {% include 'navbar.html' %}
+
+    <!-- Alert Box for Notifications -->
+    <div id="alertBox" class="alert-box" style="display: none;">
+        <span id="alertMessage"></span>
+    </div>
+
+    <!-- Modal for Confirmation Actions -->
+    <div id="confirmationModal" class="modal">
+        <div class="modal-content">
+            <h2 id="modalTitle">Confirm Action</h2>
+            <p id="modalText">Are you sure?</p>
+            <input type="text" id="gameNameInput" placeholder="Enter save name" style="display: none;">
+            <div class="modal-buttons">
+                <button onclick="confirmAction()" class="modal-button confirm" id="confirmButton">Confirm</button>
+                <button onclick="closeModal()" class="modal-button cancel">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <h1>UnscriptedAdventures</h1>
 
     <div class="index-container">
@@ -18,8 +37,8 @@
 
         <div class="game-controls">
             <div class="button-container">
-                <button onclick="newGame()" aria-label="Start a new game">New Game</button>
-                <button onclick="saveGame()" aria-label="Save your game">Save Game</button>
+                <button onclick="openModal('newGame')" aria-label="Start a new game">New Game</button>
+                <button onclick="openSaveModal()" aria-label="Save your game">Save Game</button>
             </div>
         </div>
 
@@ -28,7 +47,7 @@
                 <textarea id="userInput" placeholder="Enter your response..." aria-label="User input"></textarea>
                 <div class="button-container">
                     <button onclick="sendInteraction()" aria-label="Send your message">Send</button>
-                    <div id="loadingSpinner" class="loading-spinner"></div>
+                    <div id="loadingSpinner" class="loading-spinner" style="display: none;"></div>
                 </div>
             </div>
 
@@ -38,14 +57,14 @@
                 <p><strong>Race:</strong> {{ current_character.race }}</p>
                 <p><strong>Class:</strong> {{ current_character.class }}</p>
                 <p><strong>Background:</strong> {{ current_character.background }}</p>
-                    <div class="attributes">
-                        <p><strong>Strength:</strong> {{ request.session.current_character.strength }}</p>
-                        <p><strong>Dexterity:</strong> {{ request.session.current_character.dexterity }}</p>
-                        <p><strong>Constitution:</strong> {{ request.session.current_character.constitution }}</p>
-                        <p><strong>Intelligence:</strong> {{ request.session.current_character.intelligence }}</p>
-                        <p><strong>Wisdom:</strong> {{ request.session.current_character.wisdom }}</p>
-                        <p><strong>Charisma:</strong> {{ request.session.current_character.charisma }}</p>
-                    </div>
+                <div class="attributes">
+                    <p><strong>Strength:</strong> {{ request.session.current_character.strength }}</p>
+                    <p><strong>Dexterity:</strong> {{ request.session.current_character.dexterity }}</p>
+                    <p><strong>Constitution:</strong> {{ request.session.current_character.constitution }}</p>
+                    <p><strong>Intelligence:</strong> {{ request.session.current_character.intelligence }}</p>
+                    <p><strong>Wisdom:</strong> {{ request.session.current_character.wisdom }}</p>
+                    <p><strong>Charisma:</strong> {{ request.session.current_character.charisma }}</p>
+                </div>
             </div>
             {% else %}
             <div class="character-sheet">
@@ -56,41 +75,123 @@
     </div>
 
     <script>
-        // Retrieve conversation history from server-side variable
-        const conversationHistory = {{ conversation_history | tojson }};
+        let modalAction = "";
+        let currentGameName = "";
 
-        document.addEventListener('DOMContentLoaded', (event) => {
-            const gameDisplay = document.getElementById('gameDisplay');
-            gameDisplay.innerHTML = ''; // Clear the game display
+        function showAlert(message, type = 'success', duration = 5000) {
+            const alertBox = document.getElementById('alertBox');
+            const alertMessage = document.getElementById('alertMessage');
 
-            if (conversationHistory.length > 0) {
-                conversationHistory.forEach(message => {
-                    const formattedMessage = `
-                        <div class="message-wrapper">
-                            <div class="formatted-text">
-                                <strong>${message.role === 'user' ? 'You' : 'GM'}:</strong> ${formatMessageContent(message.content)}
-                            </div>
-                        </div>`;
-                    gameDisplay.innerHTML += formattedMessage;
-                });
-                gameDisplay.scrollTop = gameDisplay.scrollHeight; // Scroll to bottom
-            } else {
-                gameDisplay.innerHTML = '<p>Welcome to the world of UnscriptedAdventures. The journey begins...</p>';
+            alertMessage.textContent = message;
+            alertBox.className = 'alert-box ' + type;
+            alertBox.style.display = 'block';
+            alertBox.style.opacity = '1';
+
+            setTimeout(() => {
+                alertBox.style.opacity = '0';
+            }, duration - 500);
+
+            setTimeout(() => {
+                alertBox.style.display = 'none';
+                alertBox.style.opacity = '1';
+            }, duration);
+        }
+
+        function openModal(action, text = "") {
+            modalAction = action;
+            const modal = document.getElementById("confirmationModal");
+            const modalTitle = document.getElementById("modalTitle");
+            const modalText = document.getElementById("modalText");
+            const confirmButton = document.getElementById("confirmButton");
+            const gameNameInput = document.getElementById("gameNameInput");
+
+            if (action === "newGame") {
+                modalTitle.textContent = "Start a New Game";
+                modalText.textContent = "Are you sure you want to start a new game? This will reset your current progress.";
+                confirmButton.textContent = "Yes, start new game";
+                gameNameInput.style.display = "none";
+            } else if (action === "saveGame") {
+                modalTitle.textContent = "Save Game";
+                modalText.textContent = "Enter a name for this save:";
+                confirmButton.textContent = "Save Game";
+                gameNameInput.style.display = "block";
+            } else if (action === "overwriteSave") {
+                modalTitle.textContent = "Overwrite Save";
+                modalText.textContent = `A game with this name already exists. Do you want to overwrite it?`;
+                confirmButton.textContent = "Yes, overwrite";
+                gameNameInput.style.display = "none";
             }
 
-            document.getElementById('userInput').addEventListener('keydown', function(event) {
-                if (event.key === 'Enter' && !event.shiftKey) {
-                    event.preventDefault();
-                    sendInteraction();
-                }
-            });
-        });
+            modal.style.display = "flex";
+        }
 
-        // Function to format the message content
+        function closeModal() {
+            document.getElementById("confirmationModal").style.display = "none";
+        }
+
+        function confirmAction() {
+            if (modalAction === "newGame") {
+                confirmNewGame();
+            } else if (modalAction === "saveGame") {
+                currentGameName = document.getElementById("gameNameInput").value;
+                checkGameExists(currentGameName);
+            } else if (modalAction === "overwriteSave") {
+                saveGameToServer(currentGameName);
+            }
+            closeModal();
+        }
+
+        function confirmNewGame() {
+            fetch('/new_game', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    showAlert(data.message, 'success');
+                    location.reload();
+                })
+                .catch(error => showAlert('Error starting new game', 'error'));
+        }
+
+        function openSaveModal() {
+            {% if not current_character %}
+            showAlert("No character selected. Please load a character to save your game.", 'error');
+            return;
+            {% endif %}
+            openModal("saveGame");
+        }
+
+        async function checkGameExists(gameName) {
+            try {
+                const checkResponse = await fetch(`/check_game_exists/${encodeURIComponent(gameName)}`);
+                const checkData = await checkResponse.json();
+
+                if (checkData.exists) {
+                    openModal("overwriteSave");
+                } else {
+                    saveGameToServer(gameName);
+                }
+            } catch (error) {
+                showAlert("Error checking game existence.", 'error');
+            }
+        }
+
+        async function saveGameToServer(gameName) {
+            try {
+                const response = await fetch('/save_game', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ game_name: gameName })
+                });
+                const data = await response.json();
+                showAlert(data.message, 'success');
+            } catch (error) {
+                showAlert("Error saving game.", 'error');
+            }
+        }
+
         function formatMessageContent(content) {
-            return content
-                .replace(/\n/g, '<br>') // Replace newlines with <br> for proper HTML formatting
-                .replace(/(\d+\.)/g, '<br><strong>$1</strong>'); // Bold the option numbers and add newlines before each option
+            return content.replace(/\n/g, '<br>').replace(/(\d+\.)/g, '<strong>$1</strong>');
         }
 
         async function sendInteraction() {
@@ -100,7 +201,7 @@
             const sendButton = document.querySelector('.button-container button');
 
             if (!userInput) {
-                alert("Please enter a response before sending.");
+                showAlert("Please enter a response before sending.", "error");
                 return;
             }
 
@@ -116,92 +217,72 @@
                     body: JSON.stringify({ user_input: userInput })
                 });
 
-                const data = await response.json();
-
-                if (response.status === 400) {
-                    alert(data.message);
+                if (!response.ok) {
+                    console.error("Server error:", response.statusText);
+                    showAlert("An error occurred. Please try again.", "error", 6000);
                     return;
                 }
 
-                const gameDisplay = document.getElementById('gameDisplay');
-                gameDisplay.innerHTML += `
-                    <div class="message-wrapper">
-                        <div class="formatted-text"><strong>You:</strong> ${userInput}</div>
-                    </div>`;
-                gameDisplay.innerHTML += `
-                    <div class="message-wrapper">
-                        <div class="formatted-text"><strong>GM:</strong> ${formatMessageContent(data.gm_response)}</div>
-                    </div>`;
-                gameDisplay.scrollTop = gameDisplay.scrollHeight; // Scroll to bottom
+                const data = await response.json();
+                console.log("Response data:", data);
+
+                if (data && data.gm_response) {
+                    const gameDisplay = document.getElementById('gameDisplay');
+                    gameDisplay.innerHTML += `
+                        <div class="message-wrapper">
+                            <div class="formatted-text"><strong>You:</strong> ${userInput}</div>
+                        </div>`;
+                    gameDisplay.innerHTML += `
+                        <div class="message-wrapper">
+                            <div class="formatted-text"><strong>GM:</strong> ${formatMessageContent(data.gm_response)}</div>
+                        </div>`;
+                    gameDisplay.scrollTop = gameDisplay.scrollHeight;
+                } else {
+                    showAlert("Unexpected response format.", "error", 6000);
+                }
 
                 userInputBox.value = '';
                 userInputBox.setAttribute('placeholder', 'Enter your response...');
             } catch (error) {
-                console.error('Error:', error);
+                console.error("Fetch error:", error);
+                showAlert("An error occurred. Please try again.", "error", 6000);
             } finally {
                 sendButton.disabled = false;
                 loadingSpinner.style.display = 'none';
             }
         }
 
-        function newGame() {
-            if (confirm('Are you sure you want to start a new game? This will reset your current progress.')) {
-                fetch('/new_game', { method: 'POST' })
-                    .then(response => response.json())
-                    .then(data => {
-                        alert(data.message);
-                        location.reload();
-                    })
-                    .catch(error => console.error('Error starting new game:', error));
+        document.getElementById('userInput').addEventListener('keydown', function(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendInteraction();
             }
-        }
+        });
 
-        async function saveGame() {
-            // Check if the character name exists, and use it as part of the default game name
-            const characterName = "{{ current_character.name }}" || "Unnamed";
-            const defaultGameName = `${characterName}_game`;
+        // Load conversation history on page load
+        document.addEventListener('DOMContentLoaded', (event) => {
+            const gameDisplay = document.getElementById('gameDisplay');
+            gameDisplay.innerHTML = ''; // Clear the game display
 
-            // Prompt the user with the default game name pre-filled
-            let gameName = prompt("Enter a name for this save:", defaultGameName);
+            // Access conversation history from server-side JSON
+            const conversationHistory = {{ conversation_history | tojson }};
+            console.log("Full conversation history:", conversationHistory); // Debug log to verify content
 
-            // If the user cancels or leaves it empty, cancel the operation
-            if (!gameName) {
-                alert("Save game operation canceled.");
-                return;
-            }
-
-            try {
-                // Check if a game with this name already exists
-                const checkResponse = await fetch(`/check_game_exists/${encodeURIComponent(gameName)}`, {
-                    method: 'GET'
+            if (conversationHistory && conversationHistory.length > 0) {
+                conversationHistory.forEach(message => {
+                    const formattedMessage = `
+                        <div class="message-wrapper">
+                            <div class="formatted-text">
+                                <strong>${message.role === 'user' ? 'You' : 'GM'}:</strong> ${formatMessageContent(message.content)}
+                            </div>
+                        </div>`;
+                    gameDisplay.innerHTML += formattedMessage;
                 });
-                const checkData = await checkResponse.json();
-
-                if (checkData.exists) {
-                    // Ask for confirmation to overwrite the game
-                    const confirmOverwrite = confirm(`A game with the name "${gameName}" already exists. Do you want to overwrite it?`);
-                    if (!confirmOverwrite) {
-                        alert("Save operation canceled.");
-                        return;
-                    }
-                }
-
-                // Proceed to save the game
-                const response = await fetch('/save_game', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ game_name: gameName })  // Pass the game name to the server
-                });
-                const data = await response.json();
-                alert(data.message);
-            } catch (error) {
-                console.error('Error saving game:', error);
+                gameDisplay.scrollTop = gameDisplay.scrollHeight; // Scroll to bottom
+            } else {
+                gameDisplay.innerHTML = '<p>Welcome to the world of UnscriptedAdventures. The journey begins...</p>';
             }
-        }
-
-
+        });
     </script>
 </body>
 </html>

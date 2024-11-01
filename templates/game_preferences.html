@@ -9,6 +9,12 @@
 </head>
 <body>
     {% include 'navbar.html' %}
+
+    <!-- Alert Box for Notifications -->
+    <div id="alertBox" class="alert-box" style="display: none;">
+        <span id="alertMessage"></span>
+    </div>
+
     <h1>Choose Your Adventure Style</h1>
     <div class="game-preferences-container">
         <form class="game-preferences-form" id="preferencesForm">
@@ -52,6 +58,25 @@
     </div>
 
     <script>
+        // Function to display alerts
+        function showAlert(message, type = 'success') {
+            const alertBox = document.getElementById('alertBox');
+            const alertMessage = document.getElementById('alertMessage');
+
+            alertMessage.textContent = message;
+            alertBox.className = 'alert-box ' + type;
+            alertBox.style.display = 'block';
+
+            setTimeout(() => {
+                alertBox.style.opacity = '0';
+            }, 3000);
+
+            setTimeout(() => {
+                alertBox.style.display = 'none';
+                alertBox.style.opacity = '1';
+            }, 3500);
+        }
+
         async function submitPreferences() {
             const preferences = {
                 gameStyle: document.getElementById('gameStyle').value,
@@ -72,14 +97,13 @@
                     body: JSON.stringify(preferences) // Send preferences directly
                 });
                 const data = await response.json();
-                alert(data.message); // Notify user of success
+                showAlert(data.message, 'success'); // Notify user of success
             } catch (error) {
-                console.error('Error submitting preferences:', error);
+                showAlert('Error submitting preferences', 'error');
             } finally {
                 loadingSpinner.style.display = 'none'; // Hide the loading spinner
             }
         }
-
     </script>
 </body>
 </html>

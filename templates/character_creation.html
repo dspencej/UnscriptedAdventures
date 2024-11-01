@@ -1,16 +1,19 @@
-<!-- templates/character_creation.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Character Creation - UnscriptedAdventures</title>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Cinzel+Decorative:wght@400;700&display=swap" rel="stylesheet">
-    <link href="{{ url_for('static', path='/styles.css') }}" rel="stylesheet">
-    <!-- Include Font Awesome for icons -->
+    <link href="{{ url_for('static', path='styles.css') }}" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
     {% include 'navbar.html' %}
+
+    <!-- Alert Box for Notifications -->
+    <div id="alertBox" class="alert-box" style="display: none;">
+        <span id="alertMessage"></span>
+    </div>
 
     <h1>Character Creation</h1>
 
@@ -49,53 +52,25 @@
                     </div>
                 </div>
 
-                <!-- Right Column -->
+                <!-- Right Column for Attributes -->
                 <div class="form-right">
-                    <!-- Attributes Section -->
                     <div id="attributesSection">
                         <h2>Attributes</h2>
+                        {% for attribute, icon in [
+                            ('strength', 'fas fa-dumbbell'),
+                            ('dexterity', 'fas fa-running'),
+                            ('constitution', 'fas fa-heartbeat'),
+                            ('intelligence', 'fas fa-brain'),
+                            ('wisdom', 'fas fa-scroll'),
+                            ('charisma', 'fas fa-users')
+                        ] %}
                         <div class="attribute-box">
-                            <label>
-                                <i class="fas fa-dumbbell"></i> Strength
-                            </label>
-                            <div id="strengthDisplay" class="attribute-display">15</div>
+                            <label><i class="{{ icon }}"></i> {{ attribute.capitalize() }}</label>
+                            <div id="{{ attribute }}Display" class="attribute-display">10</div>
                         </div>
-                        <div class="attribute-box">
-                            <label>
-                                <i class="fas fa-running"></i> Dexterity
-                            </label>
-                            <div id="dexterityDisplay" class="attribute-display">12</div>
-                        </div>
-                        <div class="attribute-box">
-                            <label>
-                                <i class="fas fa-heartbeat"></i> Constitution
-                            </label>
-                            <div id="constitutionDisplay" class="attribute-display">10</div>
-                        </div>
-                        <div class="attribute-box">
-                            <label>
-                                <i class="fas fa-brain"></i> Intelligence
-                            </label>
-                            <div id="intelligenceDisplay" class="attribute-display">13</div>
-                        </div>
-                        <div class="attribute-box">
-                            <label>
-                                <i class="fas fa-scroll"></i> Wisdom
-                            </label>
-                            <div id="wisdomDisplay" class="attribute-display">16</div>
-                        </div>
-                        <div class="attribute-box">
-                            <label>
-                                <i class="fas fa-users"></i> Charisma
-                            </label>
-                            <div id="charismaDisplay" class="attribute-display">14</div>
-                        </div>
-
-                        <!-- Total Row -->
+                        {% endfor %}
                         <div class="attribute-box total-box">
-                            <label>
-                                <strong>Total:</strong>
-                            </label>
+                            <label><strong>Total:</strong></label>
                             <div id="totalAttributesDisplay" class="attribute-display">0</div>
                         </div>
                     </div>
@@ -111,87 +86,86 @@
     </div>
 
     <script>
-        // Function to roll 4d6 and drop the lowest
-        function roll4d6DropLowest() {
-            const rolls = [1, 2, 3, 4].map(() => Math.floor(Math.random() * 6) + 1);
-            rolls.sort((a, b) => a - b);  // Sort rolls to drop the lowest
-            return rolls[1] + rolls[2] + rolls[3];  // Sum the highest three rolls
+        function showAlert(message, type = 'success') {
+            const alertBox = document.getElementById('alertBox');
+            const alertMessage = document.getElementById('alertMessage');
+
+            alertMessage.textContent = message;
+            alertBox.className = `alert-box ${type}`;
+            alertBox.style.display = 'flex';
+
+            setTimeout(() => {
+                alertBox.style.opacity = '0';
+            }, 3000);
+
+            setTimeout(() => {
+                alertBox.style.display = 'none';
+                alertBox.style.opacity = '1';
+            }, 3500);
         }
 
-        // Function to update attribute colors based on their values
+        function roll4d6DropLowest() {
+            const rolls = Array.from({ length: 4 }, () => Math.floor(Math.random() * 6) + 1);
+            return rolls.sort().slice(1).reduce((a, b) => a + b, 0);
+        }
+
         function updateAttributeColors() {
             const rootStyles = getComputedStyle(document.documentElement);
-            const highColor = rootStyles.getPropertyValue('--high-attribute-color').trim();
-            const mediumColor = rootStyles.getPropertyValue('--medium-attribute-color').trim();
-            const lowColor = rootStyles.getPropertyValue('--low-attribute-color').trim();
+            const colors = {
+                high: rootStyles.getPropertyValue('--high-attribute-color').trim(),
+                medium: rootStyles.getPropertyValue('--medium-attribute-color').trim(),
+                low: rootStyles.getPropertyValue('--low-attribute-color').trim()
+            };
 
-            const attributes = ['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'];
-            attributes.forEach(attr => {
-                const display = document.getElementById(attr + 'Display');
-                const value = parseInt(display.textContent);
-                let bgColor;
-                if (value >= 16) {
-                    bgColor = highColor;
-                } else if (value >= 13) {
-                    bgColor = mediumColor;
-                } else {
-                    bgColor = lowColor;
-                }
-                display.style.backgroundColor = bgColor;
+            ['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'].forEach(attr => {
+                const value = parseInt(document.getElementById(`${attr}Display`).textContent);
+                document.getElementById(`${attr}Display`).style.backgroundColor =
+                    value >= 16 ? colors.high : value >= 13 ? colors.medium : colors.low;
             });
         }
 
-        // Function to calculate the total of all attributes
         function calculateTotalAttributes() {
-            const attributes = ['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'];
-            let total = 0;
-            attributes.forEach(attr => {
-                const value = parseInt(document.getElementById(attr + 'Display').textContent);
-                total += value;
-            });
+            const total = ['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma']
+                .reduce((sum, attr) => sum + parseInt(document.getElementById(attr + 'Display').textContent), 0);
             document.getElementById('totalAttributesDisplay').textContent = total;
         }
 
-        // Function to generate attributes and update colors and total
         function generateAttributes() {
-            document.getElementById('strengthDisplay').textContent = roll4d6DropLowest();
-            document.getElementById('dexterityDisplay').textContent = roll4d6DropLowest();
-            document.getElementById('constitutionDisplay').textContent = roll4d6DropLowest();
-            document.getElementById('intelligenceDisplay').textContent = roll4d6DropLowest();
-            document.getElementById('wisdomDisplay').textContent = roll4d6DropLowest();
-            document.getElementById('charismaDisplay').textContent = roll4d6DropLowest();
+            ['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma']
+                .forEach(attr => document.getElementById(attr + 'Display').textContent = roll4d6DropLowest());
 
-            updateAttributeColors(); // Update colors after generating attributes
-            calculateTotalAttributes(); // Calculate and display the total
+            updateAttributeColors();
+            calculateTotalAttributes();
         }
 
-        // Function to validate the character name
         async function validateCharacterName(name) {
             const response = await fetch(`/check_character_name/${name}`);
-            const data = await response.json();
-            return data.exists; // Returns true if name exists, false otherwise
+            return (await response.json()).exists;
         }
 
-        // Function to save character data
         async function saveCharacter() {
             const characterName = document.getElementById('characterName').value;
+            const characterRace = document.getElementById('characterRace').value;
+            const characterClass = document.getElementById('characterClass').value;
+            const characterBackground = document.getElementById('characterBackground').value;
 
-            // Check if character name already exists
-            const nameExists = await validateCharacterName(characterName);
-            if (nameExists) {
-                alert('Character name already exists. Please choose a different name.');
-                return; // Stop the save function if name exists
+            // Check if all required fields are filled
+            if (!characterName || !characterRace || !characterClass || !characterBackground) {
+                showAlert('All fields are required. Please complete the form.', 'error');
+                return;
             }
 
-            const saveButton = document.getElementById('saveButton');
-            const loadingSpinner = document.getElementById('loadingSpinner');
+            // Check if character name already exists
+            if (await validateCharacterName(characterName)) {
+                showAlert('Character name already exists. Please choose a different name.', 'error');
+                return;
+            }
 
-            // Collect character data
             const characterData = {
-                name: document.getElementById('characterName').value,
-                race: document.getElementById('characterRace').value,
-                class: document.getElementById('characterClass').value,
-                background: document.getElementById('characterBackground').value,
+                name: characterName,
+                race: characterRace,
+                class: characterClass,
+                background: characterBackground,
                 strength: document.getElementById('strengthDisplay').textContent,
                 dexterity: document.getElementById('dexterityDisplay').textContent,
                 constitution: document.getElementById('constitutionDisplay').textContent,
@@ -200,33 +174,28 @@
                 charisma: document.getElementById('charismaDisplay').textContent
             };
 
-            // Show the loading spinner and disable the button
-            saveButton.disabled = true;
-            loadingSpinner.style.display = 'inline-block';
+            document.getElementById('saveButton').disabled = true;
+            document.getElementById('loadingSpinner').style.display = 'inline-block';
 
-            // Send data to the FastAPI backend
-            fetch('/save_character', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(characterData)
-            })
-            .then(response => response.json())
-            .then(data => {
-                alert(data.message);  // Notify the user that the character was saved
-                document.getElementById('characterForm').reset(); // Clear the form
-                generateAttributes(); // Generate new attributes
-            })
-            .catch(error => console.error('Error:', error))
-            .finally(() => {
-                // Hide the loading spinner and re-enable the button
-                loadingSpinner.style.display = 'none';
-                saveButton.disabled = false;
-            });
+            try {
+                const response = await fetch('/save_character', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(characterData)
+                });
+                const data = await response.json();
+                showAlert(data.message, 'success');
+                document.getElementById('characterForm').reset();
+                generateAttributes();
+            } catch (error) {
+                showAlert('Error saving character', 'error');
+            } finally {
+                document.getElementById('loadingSpinner').style.display = 'none';
+                document.getElementById('saveButton').disabled = false;
+            }
         }
 
-        // Automatically generate attributes when the page loads
+
         window.onload = generateAttributes;
     </script>
 </body>
