@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UnscriptedAdventures</title>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Cinzel+Decorative:wght@700&display=swap" rel="stylesheet">
-    <link href="{{ url_for('static', filename='styles.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', path='styles.css') }}" rel="stylesheet">
 </head>
 <body>
     {% include 'navbar.html' %}
@@ -38,6 +38,14 @@
                 <p><strong>Race:</strong> {{ current_character.race }}</p>
                 <p><strong>Class:</strong> {{ current_character.class }}</p>
                 <p><strong>Background:</strong> {{ current_character.background }}</p>
+                    <div class="attributes">
+                        <p><strong>Strength:</strong> {{ request.session.current_character.strength }}</p>
+                        <p><strong>Dexterity:</strong> {{ request.session.current_character.dexterity }}</p>
+                        <p><strong>Constitution:</strong> {{ request.session.current_character.constitution }}</p>
+                        <p><strong>Intelligence:</strong> {{ request.session.current_character.intelligence }}</p>
+                        <p><strong>Wisdom:</strong> {{ request.session.current_character.wisdom }}</p>
+                        <p><strong>Charisma:</strong> {{ request.session.current_character.charisma }}</p>
+                    </div>
             </div>
             {% else %}
             <div class="character-sheet">
