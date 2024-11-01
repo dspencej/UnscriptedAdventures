@@ -1,6 +1,9 @@
-# Flask framework and related dependencies
-Flask==3.0.3
-Flask-Session==0.8.0
+# FastAPI framework and related dependencies
+fastapi==0.103.1
+uvicorn==0.23.1
+starlette==0.27.0
+aiofiles==23.1.0
+jinja2==3.1.2  # For templates in FastAPI
 
 # LLM and agent-related libraries
 ollama==0.3.3
@@ -22,7 +25,8 @@ urllib3==2.2.3
 PyPDF2==3.0.1
 colorama==0.4.6
 
-Flask-SQLAlchemy==3.1.1
+# SQLAlchemy for database ORM
 SQLAlchemy==2.0.36
-Flask-Migrate==4.0.7
+alembic==1.12.0
 
+python-multipart==0.0.16

@@ -1,10 +1,11 @@
+<!-- templates/manage_games.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Manage Saved Games - UnscriptedAdventures</title>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Cinzel+Decorative:wght@700&display=swap" rel="stylesheet">
-    <link href="{{ url_for('static', filename='styles.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', path='styles.css') }}" rel="stylesheet">
 </head>
 <body>
     {% include 'navbar.html' %}
@@ -55,7 +56,7 @@
         function deleteGame(gameId) {
             if (confirm('Are you sure you want to delete this game?')) {
                 fetch(`/delete_game/${gameId}`, {
-                    method: 'DELETE',  // Use DELETE method
+                    method: 'DELETE',
                 })
                 .then(response => response.json())
                 .then(data => {

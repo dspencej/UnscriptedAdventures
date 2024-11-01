@@ -1,11 +1,12 @@
+<!-- templates/base.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}UnscriptedAdventures{% endblock %}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-    <link rel="icon" href="/images/UA.png" type="image/png">
+    <link rel="stylesheet" href="{{ url_for('static', path='styles.css') }}">
+    <link rel="icon" href="{{ url_for('static', path='images/UA.png') }}" type="image/png">
     <!-- Allow additional head content to be injected -->
     {% block head %}{% endblock %}
 </head>
@@ -24,6 +25,6 @@
     </div>
 
     <!-- Scripts -->
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script src="{{ url_for('static', path='script.js') }}"></script>
 </body>
 </html>

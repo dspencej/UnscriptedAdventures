@@ -1,10 +1,11 @@
+<!-- templates/manage_characters.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Manage Characters - UnscriptedAdventures</title>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Cinzel+Decorative:wght@700&display=swap" rel="stylesheet">
-    <link href="{{ url_for('static', filename='styles.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', path='styles.css') }}" rel="stylesheet">
 </head>
 <body>
     {% include 'navbar.html' %}
@@ -27,7 +28,6 @@
                     <td>{{ character.character_class.name }}</td>
                     <td>
                         <div class="button-container">
-                            <!-- Pass character.id for correct handling -->
                             <button onclick="loadCharacter({{ character.id }})">Load</button>
                             <button onclick="deleteCharacter({{ character.id }})">Delete</button>
                         </div>
@@ -56,7 +56,7 @@
         function deleteCharacter(characterId) {
             if (confirm('Are you sure you want to delete this character?')) {
                 fetch(`/delete_character/${characterId}`, {
-                    method: 'POST'
+                    method: 'DELETE'  // Use DELETE method
                 })
                 .then(response => response.json())
                 .then(data => {

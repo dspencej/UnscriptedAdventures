@@ -1,9 +1,10 @@
+<!-- templates/game_preferences.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Game Preferences - UnscriptedAdventures</title>
-    <link href="{{ url_for('static', filename='styles.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', path='styles.css') }}" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Cinzel+Decorative:wght@1000&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -68,7 +69,7 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ preferences })
+                    body: JSON.stringify(preferences) // Send preferences directly
                 });
                 const data = await response.json();
                 alert(data.message); // Notify user of success
@@ -78,6 +79,7 @@
                 loadingSpinner.style.display = 'none'; // Hide the loading spinner
             }
         }
+
     </script>
 </body>
 </html>
