@@ -1,4 +1,6 @@
 # llm/llm_config.py
+from dotenv import load_dotenv
+load_dotenv()
 import os
 
 # Select LLM provider: 'ollama' or 'openai'
@@ -12,6 +14,11 @@ OLLAMA_API_KEY = "ollama"
 OPENAI_MODEL_3_5 = "gpt-3.5-turbo"
 OPENAI_MODEL_4 = "gpt-4"
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")  # Store API key once
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+if LLM_PROVIDER == "openai" and not OPENAI_API_KEY:
+    raise ValueError("OPENAI_API_KEY is not set in the environment variables.")
+
 
 if LLM_PROVIDER == "ollama":
     CONFIG_LIST = [
