@@ -38,7 +38,6 @@
         <div class="game-controls">
             <div class="button-container">
                 <button onclick="openModal('newGame')" aria-label="Start a new game">New Game</button>
-                <button onclick="openSaveModal()" aria-label="Save your game">Save Game</button>
             </div>
         </div>
 
@@ -110,16 +109,6 @@
                 modalText.textContent = "Are you sure you want to start a new game? This will reset your current progress.";
                 confirmButton.textContent = "Yes, start new game";
                 gameNameInput.style.display = "none";
-            } else if (action === "saveGame") {
-                modalTitle.textContent = "Save Game";
-                modalText.textContent = "Enter a name for this save:";
-                confirmButton.textContent = "Save Game";
-                gameNameInput.style.display = "block";
-            } else if (action === "overwriteSave") {
-                modalTitle.textContent = "Overwrite Save";
-                modalText.textContent = `A game with this name already exists. Do you want to overwrite it?`;
-                confirmButton.textContent = "Yes, overwrite";
-                gameNameInput.style.display = "none";
             }
 
             modal.style.display = "flex";
@@ -132,11 +121,6 @@
         function confirmAction() {
             if (modalAction === "newGame") {
                 confirmNewGame();
-            } else if (modalAction === "saveGame") {
-                currentGameName = document.getElementById("gameNameInput").value;
-                checkGameExists(currentGameName);
-            } else if (modalAction === "overwriteSave") {
-                saveGameToServer(currentGameName);
             }
             closeModal();
         }
@@ -151,44 +135,6 @@
                 .catch(error => showAlert('Error starting new game', 'error'));
         }
 
-        function openSaveModal() {
-            {% if not current_character %}
-            showAlert("No character selected. Please load a character to save your game.", 'error');
-            return;
-            {% endif %}
-            openModal("saveGame");
-        }
-
-        async function checkGameExists(gameName) {
-            try {
-                const checkResponse = await fetch(`/check_game_exists/${encodeURIComponent(gameName)}`);
-                const checkData = await checkResponse.json();
-
-                if (checkData.exists) {
-                    openModal("overwriteSave");
-                } else {
-                    saveGameToServer(gameName);
-                }
-            } catch (error) {
-                showAlert("Error checking game existence.", 'error');
-            }
-        }
-
-        async function saveGameToServer(gameName) {
-            try {
-                const response = await fetch('/save_game', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ game_name: gameName })
-                });
-                const data = await response.json();
-                showAlert(data.message, 'success');
-            } catch (error) {
-                showAlert("Error saving game.", 'error');
-            }
-        }
 
         function formatMessageContent(content) {
             return content.replace(/\n/g, '<br>').replace(/(\d+\.)/g, '<strong>$1</strong>');
