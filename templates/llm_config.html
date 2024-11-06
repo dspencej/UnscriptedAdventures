@@ -57,8 +57,11 @@
         }
 
         const models = {
-            'openai': ['gpt-3.5-turbo', 'gpt-4'],
-            'ollama': ['llama3:latest']
+        "openai": ["gpt-3.5-turbo", "gpt-4"],
+        "ollama": ["mistral:v0.3", "mistral:7b-instruct-v0.2-q8_0",
+                   "orca-mini:latest", "nomic-embed-text:latest",
+                   "llama3:latest", "llama3:instruct", "mistral:7b-instruct",
+                   "mistral:latest", "mistral:instruct", "llama2:70b", "llama2:13b"]
         };
 
         const providerSelect = document.getElementById('provider');
