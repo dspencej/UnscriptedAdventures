@@ -14,6 +14,7 @@ from llm.prompts import (
     validate_storyline_prompt,
 )
 import traceback
+from datetime import datetime
 
 # SSL Warning Suppression
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -24,6 +25,13 @@ logger.setLevel(logging.DEBUG)
 
 # Constants
 MAX_RETRIES = 3  # Maximum number of retries for handling inconsistencies
+
+# Import ORM models and database utilities
+from sqlalchemy.orm import Session
+from models.save_game_models import SavedGame, ConversationPair
+from models.character_models import Character
+from models.user_models import User
+
 
 # Helper Functions
 async def parse_response(agent_name: str, response: str) -> Optional[Dict[str, Any]]:
@@ -48,6 +56,7 @@ async def parse_response(agent_name: str, response: str) -> Optional[Dict[str, A
             f"{Fore.RED}[ERROR] Failed to parse JSON from {Fore.BLUE}{agent_name}. Error: {e}{Style.RESET_ALL}"
         )
         return None
+
 
 async def send_feedback_and_retry(
         agent,
@@ -91,6 +100,7 @@ async def send_feedback_and_retry(
         )
         logger.error(traceback.format_exc())
         return None
+
 
 async def get_agent_response(
         agent,
@@ -147,6 +157,7 @@ async def get_agent_response(
             )
     return None
 
+
 def extract_json_from_text(response: str) -> Optional[str]:
     json_block_pattern = r"```json\s*(\{.*?\})\s*```"
     match = re.search(json_block_pattern, response, re.DOTALL)
@@ -175,6 +186,7 @@ def extract_json_from_text(response: str) -> Optional[str]:
     )
     return None
 
+
 def build_conversation_context(
         user_preferences: Dict[str, str],
         current_character: Dict[str, Any],
@@ -189,6 +201,7 @@ def build_conversation_context(
         ]
     )
     return f"User Preferences:\n{preferences_text}\n\nCharacter Details:\n{character_details}\n"
+
 
 async def handle_storyline_feedback(
         dm_msg: List[Dict[str, str]], agent, agent_name: str, max_retries: int = MAX_RETRIES
@@ -206,33 +219,50 @@ async def handle_storyline_feedback(
         )
         if revised_response and isinstance(revised_response, dict):
             dm_response_text = (
-                    revised_response.get("dm_response")
+                revised_response.get("dm_response")
             )
             if dm_response_text:
                 return revised_response
         retries += 1
     return None
 
+
 # Main Function
 async def generate_gm_response(
         user_input: str,
-        conversation_history: List[Dict[str, str]],
         user_preferences: Dict[str, str],
-        storyline: str,
         current_character: Dict[str, Any],
         agents: Dict[str, Any],
+        saved_game_id: int,
+        db: Session
 ) -> Dict[str, str]:
     try:
         logger.debug(
             f"{Fore.MAGENTA}[START] Generating GM response.{Style.RESET_ALL}"
         )
-        # Reconstruct the storyline from the conversation history
-        storyline = "\n".join([f"{msg['role'].capitalize()}: {msg['content']}" for msg in conversation_history])
-        logger.debug(
-            f"{Fore.MAGENTA}[STORYLINE RECONSTRUCTED] Full storyline:\n{Fore.GREEN}{storyline}{Style.RESET_ALL}"
+
+        # Retrieve the saved game
+        saved_game = db.query(SavedGame).filter_by(id=saved_game_id).first()
+        if not saved_game:
+            return {"dm_response": "Error: Saved game not found.", "full_storyline": ""}
+
+        # Retrieve conversation pairs ordered by 'order'
+        conversation_pairs = (
+            db.query(ConversationPair)
+            .filter_by(game_id=saved_game_id)
+            .order_by(ConversationPair.order)
+            .all()
         )
 
-        is_new_campaign = not conversation_history or len(conversation_history) == 0
+        # Reconstruct the storyline
+        storyline = "\n".join([
+            f"User: {pair.user_input}\nGM: {pair.gm_response}"
+            for pair in conversation_pairs
+        ])
+        logger.debug(
+            f"{Fore.MAGENTA}[STORYLINE RECONSTRUCTED FROM DB] Full storyline:\n{Fore.GREEN}{storyline}{Style.RESET_ALL}"
+        )
+        is_new_campaign = len(conversation_pairs) == 0
         context = build_conversation_context(user_preferences, current_character)
 
         if is_new_campaign:
@@ -260,10 +290,21 @@ async def generate_gm_response(
                 dm_revision_text = dm_revision_response.get("dm_response", "") if isinstance(dm_revision_response, dict) else ""
                 if dm_revision_text:
                     storyline += f"\nDM (revised): {dm_revision_text}"
-                    return {"dm_response": dm_revision_text, "full_storyline": storyline}
+                    dm_response_text = dm_revision_text  # Use the revised response
+
+            # Save the new conversation pair to the database
+            new_conversation_pair = ConversationPair(
+                game_id=saved_game_id,
+                order=1,
+                user_input=user_input,
+                gm_response=dm_response_text,
+                timestamp=datetime.utcnow()
+            )
+            db.add(new_conversation_pair)
+            db.commit()
+
             return {"dm_response": dm_response_text, "full_storyline": storyline}
         else:
-
             dm_continue_prompt_content = continue_campaign_prompt(context, storyline, user_input)
             dm_continue_msg = [{"content": dm_continue_prompt_content, "role": "user"}]
             dm_agent = agents.get("DMAgent")
@@ -286,8 +327,22 @@ async def generate_gm_response(
                 dm_revision_text = dm_revision_response.get("dm_response", "") if isinstance(dm_revision_response, dict) else ""
                 if dm_revision_text:
                     storyline += f"\nDM (revised): {dm_revision_text}"
-                    return {"dm_response": dm_revision_text, "full_storyline": storyline}
+                    dm_response_text = dm_revision_text  # Use the revised response
+
+            # Save the new conversation pair to the database
+            new_order = len(conversation_pairs) + 1
+            new_conversation_pair = ConversationPair(
+                game_id=saved_game_id,
+                order=new_order,
+                user_input=user_input,
+                gm_response=dm_response_text,
+                timestamp=datetime.utcnow()
+            )
+            db.add(new_conversation_pair)
+            db.commit()
+
             return {"dm_response": dm_response_text, "full_storyline": storyline}
     except Exception as e:
         logger.error(f"{Fore.RED}[ERROR] Error in GM response generation: {e}{Style.RESET_ALL}")
-        return {"dm_response": "Error generating GM response.", "full_storyline": storyline}
+        logger.error(traceback.format_exc())
+        return {"dm_response": "Error generating GM response.", "full_storyline": ""}

@@ -1,8 +1,8 @@
-"""Your migration message
+"""Add User model and update game_preferences and saved_games
 
-Revision ID: 69e5f540e541
-Revises: 6136e6d1beaa
-Create Date: 2024-11-05 19:40:08.090707
+Revision ID: 9b6c9ebbaf0a
+Revises: 5ebdde428e4f
+Create Date: 2024-11-05 21:16:57.395020
 
 """
 from alembic import op
@@ -10,8 +10,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '69e5f540e541'
-down_revision = '6136e6d1beaa'
+revision = '9b6c9ebbaf0a'
+down_revision = '5ebdde428e4f'
 branch_labels = None
 depends_on = None
 

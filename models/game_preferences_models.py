@@ -1,47 +1,110 @@
-# models/game_preferences_models.py
-from models.character_models import db
+from enum import Enum
+from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy.orm import relationship, validates
+from sqlalchemy.types import Enum as SQLEnum
 
+from db.database import Base  # Import Base from your database module
 
-class GamePreferences(db.Model):
+# Enums for controlled attributes
+class GameStyleEnum(Enum):
+    NARRATIVE = "narrative"
+    COMBAT = "combat"
+    EXPLORATION = "exploration"
+    MIXED = "mixed"
+
+class ToneEnum(Enum):
+    LIGHTHEARTED = "lighthearted"
+    SERIOUS = "serious"
+    DARK = "dark"
+    HUMOROUS = "humorous"
+
+class DifficultyEnum(Enum):
+    EASY = "easy"
+    MEDIUM = "medium"
+    HARD = "hard"
+    EXPERT = "expert"
+
+class ThemeEnum(Enum):
+    FANTASY = "fantasy"
+    SCIFI = "sci-fi"
+    HORROR = "horror"
+    MODERN = "modern"
+    HISTORICAL = "historical"
+
+class GamePreferences(Base):
     __tablename__ = "game_preferences"
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.String, nullable=False)  # Assuming you use a user system
-    game_style = db.Column(db.String, nullable=False)
-    tone = db.Column(db.String, nullable=False)
-    difficulty = db.Column(db.String, nullable=False)
-    theme = db.Column(db.String, nullable=False)
+    id = Column(Integer, primary_key=True)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False, unique=True)  # Assuming you have a User model
+    game_style = Column(SQLEnum(GameStyleEnum), nullable=False)
+    tone = Column(SQLEnum(ToneEnum), nullable=False)
+    difficulty = Column(SQLEnum(DifficultyEnum), nullable=False)
+    theme = Column(SQLEnum(ThemeEnum), nullable=False)
+
+    user = relationship("User", backref="game_preferences")
 
     def __repr__(self):
-        return f"<GamePreferences {self.user_id} - {self.game_style}>"
+        return f"<GamePreferences {self.user_id} - {self.game_style.value}>"
 
+    @validates('game_style')
+    def validate_game_style(self, key, value):
+        if not isinstance(value, GameStyleEnum):
+            raise ValueError(f"Invalid game style: {value}")
+        return value
 
-def populate_defaults():
+    @validates('tone')
+    def validate_tone(self, key, value):
+        if not isinstance(value, ToneEnum):
+            raise ValueError(f"Invalid tone: {value}")
+        return value
+
+    @validates('difficulty')
+    def validate_difficulty(self, key, value):
+        if not isinstance(value, DifficultyEnum):
+            raise ValueError(f"Invalid difficulty: {value}")
+        return value
+
+    @validates('theme')
+    def validate_theme(self, key, value):
+        if not isinstance(value, ThemeEnum):
+            raise ValueError(f"Invalid theme: {value}")
+        return value
+
+def populate_defaults(session):
     """Populate the database with default game preferences."""
-    # Default preferences for a "default_user"
     default_preferences = [
         {
             "user_id": "default_user",
-            "game_style": "narrative",
-            "tone": "lighthearted",
-            "difficulty": "medium",
-            "theme": "fantasy",
+            "game_style": GameStyleEnum.NARRATIVE,
+            "tone": ToneEnum.LIGHTHEARTED,
+            "difficulty": DifficultyEnum.MEDIUM,
+            "theme": ThemeEnum.FANTASY,
         },
         {
             "user_id": "user2",
-            "game_style": "combat",
-            "tone": "serious",
-            "difficulty": "hard",
-            "theme": "sci-fi",
+            "game_style": GameStyleEnum.COMBAT,
+            "tone": ToneEnum.SERIOUS,
+            "difficulty": DifficultyEnum.HARD,
+            "theme": ThemeEnum.SCIFI,
         },
-        # Add more default preferences here if needed
+        {
+            "user_id": "user3",
+            "game_style": GameStyleEnum.EXPLORATION,
+            "tone": ToneEnum.HUMOROUS,
+            "difficulty": DifficultyEnum.EASY,
+            "theme": ThemeEnum.MODERN,
+        },
+        {
+            "user_id": "user4",
+            "game_style": GameStyleEnum.MIXED,
+            "tone": ToneEnum.DARK,
+            "difficulty": DifficultyEnum.EXPERT,
+            "theme": ThemeEnum.HORROR,
+        },
     ]
 
-    # Iterate through the default preferences and insert them into the database
     for pref in default_preferences:
-        # Check if the user_id already exists
-        existing_pref = GamePreferences.query.filter_by(user_id=pref["user_id"]).first()
+        existing_pref = session.query(GamePreferences).filter_by(user_id=pref["user_id"]).first()
         if not existing_pref:
-            # Create new preference entry if it doesn't exist
             new_pref = GamePreferences(
                 user_id=pref["user_id"],
                 game_style=pref["game_style"],
@@ -49,7 +112,5 @@ def populate_defaults():
                 difficulty=pref["difficulty"],
                 theme=pref["theme"],
             )
-            db.session.add(new_pref)
-
-    # Commit the changes to the database
-    db.session.commit()
+            session.add(new_pref)
+    session.commit()
