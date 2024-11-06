@@ -1,12 +1,9 @@
 # app.py
 
-import json
-import logging
 import os
 from datetime import datetime
-from pathlib import Path
+import logging
 
-from colorama import Fore, Style
 from fastapi import FastAPI, Request, Depends, Form
 from fastapi.responses import JSONResponse, RedirectResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
@@ -462,7 +459,10 @@ async def post_llm_config(request: Request):
     valid_providers = ["openai", "ollama"]
     valid_models = {
         "openai": ["gpt-3.5-turbo", "gpt-4"],
-        "ollama": ["llama3:latest"]
+        "ollama": ["mistral:v0.3", "mistral:7b-instruct-v0.2-q8_0",
+                   "orca-mini:latest", "nomic-embed-text:latest",
+                   "llama3:latest", "llama3:instruct", "mistral:7b-instruct",
+                   "mistral:latest", "mistral:instruct", "llama2:70b", "llama2:13b"]
     }
 
     if provider not in valid_providers:
