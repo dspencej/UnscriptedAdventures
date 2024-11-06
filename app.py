@@ -1,8 +1,11 @@
+# app.py
+
 import json
 import logging
 import os
 from pathlib import Path
 
+from colorama import Fore, Style
 from fastapi import FastAPI, Request, Depends, Form
 from fastapi.responses import JSONResponse, RedirectResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
@@ -116,6 +119,11 @@ async def interact(request: Request):
         logger.error("Failed to initialize agents.")
         return JSONResponse({"status": "error", "message": "Failed to initialize agents."}, status_code=500)
 
+    # Append the user's input to the conversation history before generating the response
+    conversation_history.append({"role": "user", "content": user_input})
+    request.session["conversation_history"] = conversation_history  # Reassign to session
+
+
     # Pass the agents to the LLM agent
     gm_response = await generate_gm_response(
         user_input,
@@ -128,14 +136,14 @@ async def interact(request: Request):
 
     gm_response_text = gm_response.get("dm_response", "Unknown response") if isinstance(gm_response, dict) else "Unknown response"
 
-    # Update conversation_history
-    conversation_history.append({"role": "user", "content": user_input})
+    # Append the DM's response to the conversation history
     conversation_history.append({"role": "gm", "content": gm_response_text})
-    request.session["conversation_history"] = conversation_history
+    request.session["conversation_history"] = conversation_history  # Reassign to session
 
-    # Update storyline
-    storyline = gm_response.get("full_storyline", storyline)
-    request.session["storyline"] = storyline  # Reassign to session
+    # No need to handle storyline here, as it's reconstructed from conversation_history
+
+    # Optionally, log the current storyline for debugging
+    logger.info(f"{Fore.MAGENTA}Current Storyline (from App): \n{Fore.GREEN}{gm_response.get('full_storyline', '')}{Style.RESET_ALL}")
 
     return JSONResponse({"gm_response": gm_response_text})
 

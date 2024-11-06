@@ -226,15 +226,15 @@ async def generate_gm_response(
         logger.debug(
             f"{Fore.MAGENTA}[START] Generating GM response.{Style.RESET_ALL}"
         )
-        formatted_history = "\n".join([f"{msg['role'].capitalize()}: {msg['content']}" for msg in conversation_history])
+        # Reconstruct the storyline from the conversation history
+        storyline = "\n".join([f"{msg['role'].capitalize()}: {msg['content']}" for msg in conversation_history])
         logger.debug(
-            f"{Fore.MAGENTA}[CONVERSATION HISTORY] Full conversation history:\n{Fore.BLUE}{formatted_history}{Style.RESET_ALL}"
+            f"{Fore.MAGENTA}[STORYLINE RECONSTRUCTED] Full storyline:\n{Fore.GREEN}{storyline}{Style.RESET_ALL}"
         )
 
         is_new_campaign = not conversation_history or len(conversation_history) == 0
         context = build_conversation_context(user_preferences, current_character)
-        if not storyline:
-            storyline = ""
+
         if is_new_campaign:
             dm_prompt_content = create_campaign_prompt(user_input, context)
             dm_msg = [{"content": dm_prompt_content, "role": "user"}]
@@ -263,7 +263,7 @@ async def generate_gm_response(
                     return {"dm_response": dm_revision_text, "full_storyline": storyline}
             return {"dm_response": dm_response_text, "full_storyline": storyline}
         else:
-            storyline += f"\n\nUser: {user_input}"
+
             dm_continue_prompt_content = continue_campaign_prompt(context, storyline, user_input)
             dm_continue_msg = [{"content": dm_continue_prompt_content, "role": "user"}]
             dm_agent = agents.get("DMAgent")
@@ -271,7 +271,7 @@ async def generate_gm_response(
                 return {"dm_response": "Error continuing the campaign.", "full_storyline": storyline}
             dm_response = await get_agent_response(dm_agent, "DMAgent", dm_continue_msg, ["dm_response"])
             dm_response_text = dm_response.get("dm_response", "") if isinstance(dm_response, dict) else ""
-            storyline += f"\nDM: {dm_response_text}"
+
             storyteller_agent = agents.get("StorytellerAgent")
             if not storyteller_agent:
                 return {"dm_response": "Error validating the storyline.", "full_storyline": storyline}
