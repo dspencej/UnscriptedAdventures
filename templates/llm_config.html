@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Configuration</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Cinzel+Decorative:wght@700&display=swap" rel="stylesheet">
+    <link href="{{ url_for('static', path='styles.css') }}" rel="stylesheet">
+</head>
+<body>
+
+    {% include 'navbar.html' %}
+
+    <!-- Alert Box for Notifications -->
+    <div id="alertBox" class="alert-box" style="display: none;">
+        <span id="alertMessage"></span>
+    </div>
+
+    <!-- Page Header -->
+    <h1>LLM Configuration</h1>
+
+    <!-- Main Container for Dropdowns and Form -->
+    <div class="llm-config-container">
+        <form id="llmConfigForm">
+            <label for="provider">LLM Provider:</label>
+            <select name="provider" id="provider" required>
+                <option value="openai" {% if current_provider == 'openai' %}selected{% endif %}>OpenAI</option>
+                <option value="ollama" {% if current_provider == 'ollama' %}selected{% endif %}>Ollama</option>
+            </select>
+
+            <label for="model">Model:</label>
+            <select name="model" id="model" required>
+                <!-- Models populated dynamically based on provider -->
+            </select>
+
+            <button type="submit">Save Configuration</button>
+        </form>
+    </div>
+
+    <script>
+        function showAlert(message, type = 'success') {
+            const alertBox = document.getElementById('alertBox');
+            const alertMessage = document.getElementById('alertMessage');
+
+            alertMessage.textContent = message;
+            alertBox.className = 'alert-box ' + type;
+            alertBox.style.display = 'block';
+
+            setTimeout(() => {
+                alertBox.style.opacity = '0';
+            }, 5000);
+
+            setTimeout(() => {
+                alertBox.style.display = 'none';
+                alertBox.style.opacity = '1';
+            }, 6000);
+        }
+
+        const models = {
+            'openai': ['gpt-3.5-turbo', 'gpt-4'],
+            'ollama': ['llama3:latest']
+        };
+
+        const providerSelect = document.getElementById('provider');
+        const modelSelect = document.getElementById('model');
+
+        function updateModelOptions() {
+            const selectedProvider = providerSelect.value;
+            const providerModels = models[selectedProvider] || [];
+
+            modelSelect.innerHTML = '';
+            providerModels.forEach(model => {
+                const option = document.createElement('option');
+                option.value = model;
+                option.textContent = model;
+                modelSelect.appendChild(option);
+            });
+
+            const currentModel = "{{ current_model }}";
+            if (providerModels.includes(currentModel)) {
+                modelSelect.value = currentModel;
+            }
+        }
+
+        providerSelect.addEventListener('change', updateModelOptions);
+        window.onload = updateModelOptions;
+
+        document.getElementById('llmConfigForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const formData = new FormData(this);
+            const formDataObject = Object.fromEntries(formData.entries());
+
+            try {
+                const response = await fetch('/llm_config', {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formDataObject)
+                });
+
+                const data = await response.json();
+
+                if (data.status === "success") {
+                    showAlert(data.message, 'success');
+                } else {
+                    showAlert(data.message, 'error');
+                }
+            } catch (error) {
+                showAlert("An unexpected error occurred: " + error, 'error');
+            }
+        });
+    </script>
+</body>
+</html>

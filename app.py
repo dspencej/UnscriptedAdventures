@@ -9,14 +9,23 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.staticfiles import StaticFiles
+from dotenv import load_dotenv
 
 # Import ORM models
 from llm.llm_agent import generate_gm_response
+from llm.llm_config import get_llm_config
+from llm.agents import get_agents
 from models.character_models import Background, Character, Class, Race
 from models.character_models import populate_defaults as populate_character_defaults
 from models.game_preferences_models import GamePreferences
 from models.game_preferences_models import populate_defaults as populate_game_defaults
 from models.save_game_models import SavedGame
+
+# Initialize SQLAlchemy
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
+load_dotenv()
 
 app = FastAPI()
 
@@ -33,9 +42,6 @@ basedir = Path(__file__).resolve().parent
 db_file = basedir / "characters.db"
 database_url = f"sqlite:///{db_file}"
 
-# Initialize SQLAlchemy
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
 engine = create_engine(database_url, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -72,6 +78,9 @@ async def index(request: Request):
     )
 
 
+# app.py (continued)
+
+
 @app.post("/interact")
 async def interact(request: Request):
     data = await request.json()
@@ -88,15 +97,45 @@ async def interact(request: Request):
     if not current_character:
         return JSONResponse({"status": "error", "message": "Please load a character!"}, status_code=400)
 
-    gm_response = await generate_gm_response(user_input, conversation_history, user_preferences, storyline,
-                                             current_character)
-    gm_response_text = gm_response.get("dm_response", "Unknown response") if isinstance(gm_response,
-                                                                                        dict) else "Unknown response"
-    request.session["storyline"] = gm_response.get("full_storyline", storyline)
-    request.session["conversation_history"].append({"role": "user", "content": user_input})
-    request.session["conversation_history"].append({"role": "gm", "content": gm_response_text})
+    # Retrieve LLM configuration from session
+    provider = request.session.get("llm_provider", "openai")
+    model = request.session.get("llm_model", "gpt-4")  # Adjust default model as needed
+    try:
+        # Get the unified LLM configuration
+        llm_config = get_llm_config(provider)
+    except (EnvironmentError, ValueError) as e:
+        logger.error(f"LLM Configuration Error: {e}")
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
 
-    
+    # Create agent instances with the fetched configurations
+    agents = get_agents(llm_config)
+    dm_agent = agents.get("DMAgent")
+    storyteller_agent = agents.get("StorytellerAgent")
+
+    if not dm_agent or not storyteller_agent:
+        logger.error("Failed to initialize agents.")
+        return JSONResponse({"status": "error", "message": "Failed to initialize agents."}, status_code=500)
+
+    # Pass the agents to the LLM agent
+    gm_response = await generate_gm_response(
+        user_input,
+        conversation_history,
+        user_preferences,
+        storyline,
+        current_character,
+        agents=agents  # Pass the agents dictionary
+    )
+
+    gm_response_text = gm_response.get("dm_response", "Unknown response") if isinstance(gm_response, dict) else "Unknown response"
+
+    # Update conversation_history
+    conversation_history.append({"role": "user", "content": user_input})
+    conversation_history.append({"role": "gm", "content": gm_response_text})
+    request.session["conversation_history"] = conversation_history
+
+    # Update storyline
+    storyline = gm_response.get("full_storyline", storyline)
+    request.session["storyline"] = storyline  # Reassign to session
 
     return JSONResponse({"gm_response": gm_response_text})
 
@@ -107,7 +146,7 @@ async def new_game(request: Request):
     request.session["user_preferences"] = {}
     request.session["current_character"] = {}
     request.session["storyline"] = ""
-    
+
     return JSONResponse({"message": "New game started."})
 
 
@@ -193,7 +232,7 @@ async def save_character(request: Request, db: Session = Depends(get_db)):
         "armor_class": new_character.armor_class,
         "speed": new_character.speed,
     }
-    
+
     return JSONResponse({"message": "Character saved successfully!"}, status_code=201)
 
 
@@ -229,8 +268,8 @@ async def select_character(character_id: int, request: Request, db: Session = De
         "speed": character.speed,
     }
     request.session["current_character"] = selected_character
-    
-    return JSONResponse({"status": "success", "character": selected_character})
+
+    return JSONResponse({"status": "success", "message": f"Character '{character.name}' loaded successfully", "character": selected_character})
 
 
 @app.post("/delete_character/{character_id}")
@@ -327,6 +366,7 @@ async def load_game(game_id: int, request: Request, db: Session = Depends(get_db
     if not saved_game:
         return JSONResponse({"status": "error", "message": "Saved game not found"}, status_code=404)
 
+    # Load game data into session
     request.session["conversation_history"] = json.loads(saved_game.conversation_history)
     request.session["storyline"] = saved_game.storyline
 
@@ -351,8 +391,9 @@ async def load_game(game_id: int, request: Request, db: Session = Depends(get_db
             "armor_class": character.armor_class,
             "speed": character.speed,
         }
-    
+
     return JSONResponse({"status": "success", "message": "Game loaded successfully!"})
+
 
 @app.delete("/delete_character/{character_id}")
 async def delete_character(character_id: int, request: Request, db: Session = Depends(get_db)):
@@ -387,12 +428,14 @@ async def check_game_exists(game_name: str, db: Session = Depends(get_db)):
     exists = db.query(SavedGame).filter_by(user_id=user_id, game_name=game_name).first() is not None
     return JSONResponse({"exists": exists})
 
+
 @app.get("/check_character_name/{name}")
 async def check_character_name(name: str, db: Session = Depends(get_db)):
     existing_character = db.query(Character).filter_by(name=name).first()
     if existing_character:
         return {"exists": True}
     return {"exists": False}
+
 
 @app.get("/manage_games", response_class=HTMLResponse)
 async def manage_games(request: Request, db: Session = Depends(get_db)):
@@ -404,6 +447,49 @@ async def manage_games(request: Request, db: Session = Depends(get_db)):
 @app.get("/thank_you", response_class=HTMLResponse)
 async def thank_you(request: Request):
     return templates.TemplateResponse("thank_you.html", {"request": request})
+
+
+@app.get("/llm_config", response_class=HTMLResponse)
+async def llm_config(request: Request):
+    # Retrieve current selections from session, if any
+    current_provider = request.session.get("llm_provider", "openai")
+    current_model = request.session.get("llm_model", "gpt-3.5-turbo")
+    return templates.TemplateResponse(
+        "llm_config.html",
+        {
+            "request": request,
+            "current_provider": current_provider,
+            "current_model": current_model
+        }
+    )
+
+
+@app.post("/llm_config", response_class=HTMLResponse)
+async def post_llm_config(request: Request):
+    # Parse JSON data from request body
+    form_data = await request.json()
+    provider = form_data.get("provider")
+    model = form_data.get("model")
+
+    # Validate provider and model
+    valid_providers = ["openai", "ollama"]
+    valid_models = {
+        "openai": ["gpt-3.5-turbo", "gpt-4"],
+        "ollama": ["llama3:latest"]
+    }
+
+    if provider not in valid_providers:
+        return JSONResponse({"status": "error", "message": "Invalid provider selected."}, status_code=400)
+
+    if model not in valid_models.get(provider, []):
+        return JSONResponse({"status": "error", "message": "Invalid model selected for the provider."}, status_code=400)
+
+    # Store selections in session
+    request.session["llm_provider"] = provider
+    request.session["llm_model"] = model
+
+    # Return a success response
+    return JSONResponse({"status": "success", "message": "LLM Configuration has been saved successfully!"})
 
 
 if __name__ == "__main__":
