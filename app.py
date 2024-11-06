@@ -127,9 +127,15 @@ async def interact(request: Request):
     )
 
     gm_response_text = gm_response.get("dm_response", "Unknown response") if isinstance(gm_response, dict) else "Unknown response"
-    request.session["storyline"] = gm_response.get("full_storyline", storyline)
-    request.session["conversation_history"].append({"role": "user", "content": user_input})
-    request.session["conversation_history"].append({"role": "gm", "content": gm_response_text})
+
+    # Update conversation_history
+    conversation_history.append({"role": "user", "content": user_input})
+    conversation_history.append({"role": "gm", "content": gm_response_text})
+    request.session["conversation_history"] = conversation_history
+
+    # Update storyline
+    storyline = gm_response.get("full_storyline", storyline)
+    request.session["storyline"] = storyline  # Reassign to session
 
     return JSONResponse({"gm_response": gm_response_text})
 
