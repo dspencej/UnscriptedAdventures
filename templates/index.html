@@ -135,9 +135,11 @@
                 .catch(error => showAlert('Error starting new game', 'error'));
         }
 
-
         function formatMessageContent(content) {
-            return content.replace(/\n/g, '<br>').replace(/(\d+\.)/g, '<strong>$1</strong>');
+            return content
+                .replace(/\n\n/g, '<br><br>') // Convert paragraph breaks to double <br>
+                .replace(/\n/g, '<br>')       // Convert line breaks to <br>
+                .replace(/(\d+\.)/g, '<strong>$1</strong>'); // Bold numbers for options
         }
 
         async function sendInteraction() {
@@ -212,7 +214,7 @@
 
             // Access conversation history from server-side JSON
             const conversationHistory = {{ conversation_history | tojson }};
-            console.log("Full conversation history:", conversationHistory); // Debug log to verify content
+            console.log("Full conversation history:", conversationHistory);
 
             if (conversationHistory && conversationHistory.length > 0) {
                 conversationHistory.forEach(message => {
