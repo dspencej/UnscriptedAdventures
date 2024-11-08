@@ -173,8 +173,15 @@ async def new_game(request: Request, db: Session = Depends(get_db), user: User =
 
     # Store saved_game_id in session
     request.session["saved_game_id"] = new_game.id
+    logger.info(f"New game started with ID: {new_game.id} and saved to session.")
+
+    # Confirm session saved the ID correctly
+    if "saved_game_id" not in request.session or request.session["saved_game_id"] != new_game.id:
+        logger.error("Failed to store 'saved_game_id' in the session.")
+        return JSONResponse({"status": "error", "message": "Failed to start the new game due to session error."}, status_code=500)
 
     return JSONResponse({"message": "New game started.", "saved_game_id": new_game.id})
+
 
 @app.get("/about", response_class=HTMLResponse)
 async def about(request: Request):
@@ -388,11 +395,32 @@ async def load_game(game_id: int, request: Request, db: Session = Depends(get_db
 
     return JSONResponse({"status": "success", "message": "Game loaded successfully!"}, status_code=200)
 
+from fastapi import Query
+
 @app.delete("/delete_character/{character_id}")
-async def delete_character(character_id: int, request: Request, db: Session = Depends(get_db)):
+async def delete_character(
+    character_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    confirm: bool = Query(False)
+):
     character = db.query(Character).get(character_id)
     if not character:
         return JSONResponse({"status": "error", "message": "Character not found"}, status_code=404)
+
+    # Check if there are saved games associated with this character
+    saved_games_count = db.query(SavedGame).filter(SavedGame.character_id == character_id).count()
+
+    # If there are saved games and confirm is not set, prompt for confirmation
+    if saved_games_count > 0 and not confirm:
+        return JSONResponse({
+            "status": "confirm",
+            "message": f"Deleting this character will also delete {saved_games_count} associated saved game(s). Please confirm to proceed."
+        })
+
+    # If confirmed, delete saved games and character
+    if saved_games_count > 0:
+        db.query(SavedGame).filter(SavedGame.character_id == character_id).delete()
 
     db.delete(character)
     db.commit()
@@ -401,7 +429,8 @@ async def delete_character(character_id: int, request: Request, db: Session = De
     if request.session.get("current_character", {}).get("id") == character_id:
         request.session.pop("current_character", None)
 
-    return JSONResponse({"status": "success", "message": f"Character {character.name} deleted successfully!"}, status_code=200)
+    return JSONResponse({"status": "success", "message": f"Character {character.name} and associated saved games deleted successfully!"})
+
 
 @app.delete("/delete_game/{game_id}")
 async def delete_game(game_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
