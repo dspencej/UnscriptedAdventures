@@ -55,86 +55,88 @@
         </table>
     </div>
 
-    <script>
-        let characterIdToDelete = null;
+<script>
+    let characterIdToDelete = null;
 
-        function showAlert(message, type = 'success') {
-            const alertBox = document.getElementById('alertBox');
-            const alertMessage = document.getElementById('alertMessage');
+    function showAlert(message, type = 'success') {
+        const alertBox = document.getElementById('alertBox');
+        const alertMessage = document.getElementById('alertMessage');
 
-            alertMessage.textContent = message;
-            alertBox.className = 'alert-box ' + type;
-            alertBox.style.display = 'block';
-            alertBox.style.opacity = '1'; // Ensure the alert is fully visible
+        alertMessage.textContent = message;
+        alertBox.className = 'alert-box ' + type;
+        alertBox.style.display = 'block';
+        alertBox.style.opacity = '1';
 
-            // Keep the alert visible for 5 seconds (5000 ms)
-            setTimeout(() => {
-                alertBox.style.opacity = '1'; // Keep it fully visible for a longer period
-            }, 5000);
+        setTimeout(() => {
+            alertBox.style.opacity = '1';
+        }, 5000);
 
-            // Start fade-out effect after 5 seconds and complete it by 5.5 seconds
-            setTimeout(() => {
-                alertBox.style.opacity = '0';
-            }, 8000);
+        setTimeout(() => {
+            alertBox.style.opacity = '0';
+        }, 8000);
 
-            // Hide the alert box completely after fade-out
-            setTimeout(() => {
-                alertBox.style.display = 'none';
-                alertBox.style.opacity = '1';
-            }, 8500);
-        }
+        setTimeout(() => {
+            alertBox.style.display = 'none';
+            alertBox.style.opacity = '1';
+        }, 8500);
+    }
 
-
-        function loadCharacter(characterId) {
-            fetch(`/select_character/${characterId}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        showAlert(data.message, 'success');
-                    } else {
-                        showAlert(data.message, 'error');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error loading character:', error);
-                    showAlert('Error loading character', 'error');
-                });
-        }
-
-        function openModal(characterId) {
-            characterIdToDelete = characterId;
-            document.getElementById("modalTitle").textContent = "Delete Character";
-            document.getElementById("modalText").textContent = "Are you sure you want to delete this character?";
-            document.getElementById("confirmationModal").style.display = "flex";
-        }
-
-        function closeModal() {
-            document.getElementById("confirmationModal").style.display = "none";
-        }
-
-        function confirmAction() {
-            deleteCharacter(characterIdToDelete);
-            closeModal();
-        }
-
-        function deleteCharacter(characterId) {
-            fetch(`/delete_character/${characterId}`, {
-                method: 'DELETE'
-            })
+    function loadCharacter(characterId) {
+        fetch(`/select_character/${characterId}`)
             .then(response => response.json())
             .then(data => {
                 if (data.status === 'success') {
                     showAlert(data.message, 'success');
-                    location.reload();
                 } else {
-                    showAlert('Error deleting character: ' + data.message, 'error');
+                    showAlert(data.message, 'error');
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
-                showAlert('An unexpected error occurred.', 'error');
+                console.error('Error loading character:', error);
+                showAlert('Error loading character', 'error');
             });
-        }
-    </script>
+    }
+
+    function openModal(characterId) {
+        characterIdToDelete = characterId;
+        document.getElementById("modalTitle").textContent = "Delete Character";
+        document.getElementById("modalText").textContent = "Are you sure you want to delete this character?";
+        document.getElementById("confirmationModal").style.display = "flex";
+    }
+
+    function closeModal() {
+        document.getElementById("confirmationModal").style.display = "none";
+    }
+
+    function confirmAction() {
+        deleteCharacter(characterIdToDelete, true);
+        closeModal();
+    }
+
+    function deleteCharacter(characterId, confirm = false) {
+        const url = `/delete_character/${characterId}?confirm=${confirm}`;
+
+        fetch(url, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showAlert(data.message, 'success');
+                location.reload();
+            } else if (data.status === 'confirm') {
+                openModal(characterId);
+                document.getElementById("modalText").textContent = data.message;
+            } else {
+                showAlert('Error deleting character: ' + data.message, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('An unexpected error occurred.', 'error');
+        });
+    }
+</script>
+
 </body>
 </html>
