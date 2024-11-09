@@ -34,7 +34,7 @@ class SavedGame(Base):
     )
 
     @validates("game_name")
-    def validate_game_name(self, value):
+    def validate_game_name(self, key, value):
         if not value or not value.strip():
             raise ValueError("Game name cannot be empty")
         return value.strip()
@@ -57,15 +57,15 @@ class ConversationPair(Base):
     game = relationship("SavedGame", back_populates="conversation_pairs")
 
     @validates("order")
-    def validate_order(self, value):
+    def validate_order(self, key, value):
         if value is None or value <= 0:
             raise ValueError("Order must be a positive integer")
         return value
 
-    @validates("user_input", "gm_response")
-    def validate_text_fields(self, key, value):
+    @validates("game_name")
+    def validate_game_name(self, key, value):
         if not value or not value.strip():
-            raise ValueError(f"{key.replace('_', ' ').capitalize()} cannot be empty")
+            raise ValueError("Game name cannot be empty")
         return value.strip()
 
     def __repr__(self):

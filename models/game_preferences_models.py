@@ -55,25 +55,25 @@ class GamePreferences(Base):
         return f"<GamePreferences {self.user_id} - {self.game_style.value}>"
 
     @validates("game_style")
-    def validate_game_style(self, value):
+    def validate_game_style(self, key, value):
         if not isinstance(value, GameStyleEnum):
             raise ValueError(f"Invalid game style: {value}")
         return value
 
     @validates("tone")
-    def validate_tone(self, value):
+    def validate_tone(self, key, value):
         if not isinstance(value, ToneEnum):
             raise ValueError(f"Invalid tone: {value}")
         return value
 
     @validates("difficulty")
-    def validate_difficulty(self, value):
+    def validate_difficulty(self, key, value):
         if not isinstance(value, DifficultyEnum):
             raise ValueError(f"Invalid difficulty: {value}")
         return value
 
     @validates("theme")
-    def validate_theme(self, value):
+    def validate_theme(self, key, value):
         if not isinstance(value, ThemeEnum):
             raise ValueError(f"Invalid theme: {value}")
         return value
