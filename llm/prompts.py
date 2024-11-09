@@ -76,7 +76,7 @@ def validate_storyline_prompt(context, storyline):
         f"**Response Format:**\n"
         f"```json\n"
         f"{{\n"
-        f'  "feedback": "<Your feedback here, if any>"\n'
+        f'  "feedback": "<Your feedback here, or empty string>"\n'
         f"}}\n"
         f"```\n\n"
         f"**Examples of Feedback:**\n"
@@ -283,7 +283,7 @@ def format_feedback_prompt(expected_keys):
         f"**Correct Format Example:**\n"
         f"```json\n"
         f"{{\n"
-        f'  "dm_response": "The hero enters the dark cave, the air thick with the scent of damp earth. A faint glow emanates from deep within..."'
+        f'  "dm_response": "<dm response here>."'
         f"}}\n"
         f"```\n"
     )

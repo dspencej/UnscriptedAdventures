@@ -32,7 +32,7 @@ def get_llm_config(provider: str) -> Dict[str, Any]:
         config = {
             "config_list": [
                 {
-                    "model": "gpt-4",
+                    "model": "gpt-3.5-turbo",
                     "api_key": api_key,
                     "api_type": "openai",
                     "base_url": "https://api.openai.com/v1",
