@@ -247,38 +247,60 @@ def inform_invalid_action_prompt(context, dm_response, user_input, feedback):
 
 def validate_player_action_prompt(context, dm_response, user_input):
     return (
-        f"Review the player's chosen action to verify it is valid based on their character's abilities, the context "
-        f"of the DM's response, and D&D 5th Edition rules.\n\n"
+        f"Review the player's input to determine whether it is an action or a question.\n\n"
         f"**Player Preferences and Character Details:**\n{context}\n\n"
         f"**DM's Last Response (Scene and Options):**\n{dm_response}\n\n"
-        f"**Player Input (Chosen Action):**\n{user_input}\n\n"
+        f"**Player Input:**\n{user_input}\n\n"
         f"**Instructions:**\n"
-        f"1. Confirm that the player's chosen action aligns with their character’s abilities, class, and D&D 5th "
-        f"Edition rules.\n"
-        f"2. Assess whether the action is reasonable and consistent within the scene and options presented by the DM.\n"
-        f"3. If the action is invalid, suggest a similar action that fits within their abilities and aligns with the "
-        f"scene.\n"
-        f"4. **Only provide feedback if the action is invalid.**\n\n"
-        f"**Response Format:**\n"
+        f"1. **Identify** if the player's input is a **question** about their surroundings or a **proposed action**.\n"
+        f"2. **If it's a question** about the scene or context, **answer it directly** in character as the DM, "
+        f"providing helpful information to clarify the scene.\n"
+        f"3. **If it's an action**, verify if it aligns with the character's abilities, class, and D&D 5th Edition "
+        f"rules.\n"
+        f"   - If the action is **valid and reasonable** within the context, acknowledge it briefly.\n"
+        f"   - If the action is **invalid or inconsistent**, explain why and suggest two or three alternative actions "
+        f"that are appropriate.\n"
+        f"4. **Respond only with the appropriate JSON format** based on the type of input.\n"
+        f"5. **Do not include any text outside of the JSON block.**\n\n"
+        f"**Response Formats:**\n"
+        f"- **If the player's input is a question**, respond with:\n"
         f"```json\n"
         f"{{\n"
-        f'  "feedback": "<Your feedback here, if any>"\n'
-        f"}}\n"
-        f"```\n\n"
-        f"**Examples of Feedback:**\n"
-        f"- **Example of invalid action due to spellcasting limitations:**\n"
-        f"```json\n"
-        f"{{\n"
-        f'  "feedback": "The player attempted to cast Fireball, which is invalid as a Ranger. Recommend '
-        f"actions such as 'draw your bow' or 'use stealth'.\"\n"
+        f'  "dm_response": "<Answer to the player\'s question>"\n'
         f"}}\n"
         f"```\n"
-        f"- **Example of action inconsistent with scene context:**\n"
+        f"- **If the player's action is valid**, respond with:\n"
         f"```json\n"
         f"{{\n"
-        f'  "feedback": "The player chose to \'climb a tree for a better view,\' but the scene describes them being '
-        f"inside a cave. Recommend an action within the cave context, such as 'explore the cave further' or "
-        f"'approach the sound cautiously.'\"\n"
+        f'  "acknowledgment": "<Brief acknowledgment of the action>"\n'
+        f"}}\n"
+        f"```\n"
+        f"- **If the player's action is invalid**, respond with:\n"
+        f"```json\n"
+        f"{{\n"
+        f'  "feedback": "<Explanation of why the action is invalid and suggestions>"\n'
+        f"}}\n"
+        f"```\n\n"
+        f"**Examples:**\n"
+        f"- **Response to a valid question:**\n"
+        f"```json\n"
+        f"{{\n"
+        f'  "dm_response": "You are currently on the edge of the Whispering Woods, near the ruins of a caravan. The '
+        f'forest looms nearby, with trails leading deeper into its depths."\n'
+        f"}}\n"
+        f"```\n"
+        f"- **Acknowledgment of a valid action:**\n"
+        f"```json\n"
+        f"{{\n"
+        f'  "acknowledgment": "You decide to investigate the surrounding area, taking advantage of the daylight to '
+        f'gather resources."\n'
+        f"}}\n"
+        f"```\n"
+        f"- **Feedback for an invalid action:**\n"
+        f"```json\n"
+        f"{{\n"
+        f'  "feedback": "Casting \'Fireball\' is not possible for your character as a Ranger. Consider actions like '
+        f"'use your bow' or 'track the creature' instead.\"\n"
         f"}}\n"
         f"```\n"
     )
