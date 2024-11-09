@@ -2,8 +2,16 @@
 
 from enum import Enum
 from sqlalchemy import (
-    Column, Integer, String, Boolean, Float, JSON, Text,
-    Enum as SQLEnum, ForeignKey, Table
+    Column,
+    Integer,
+    String,
+    Boolean,
+    Float,
+    JSON,
+    Text,
+    Enum as SQLEnum,
+    ForeignKey,
+    Table,
 )
 from sqlalchemy.orm import relationship, validates, Session
 
@@ -11,28 +19,33 @@ from db.database import Base  # Import Base from your database module
 
 # Association tables
 character_inventory = Table(
-    "character_inventory", Base.metadata,
+    "character_inventory",
+    Base.metadata,
     Column("character_id", Integer, ForeignKey("characters.id"), primary_key=True),
     Column("item_id", Integer, ForeignKey("items.id"), primary_key=True),
 )
 
 character_feats = Table(
-    "character_feats", Base.metadata,
+    "character_feats",
+    Base.metadata,
     Column("character_id", Integer, ForeignKey("characters.id"), primary_key=True),
     Column("feat_id", Integer, ForeignKey("feats.id"), primary_key=True),
 )
 
 character_features = Table(
-    "character_features", Base.metadata,
+    "character_features",
+    Base.metadata,
     Column("character_id", Integer, ForeignKey("characters.id"), primary_key=True),
     Column("feature_id", Integer, ForeignKey("features.id"), primary_key=True),
 )
 
 character_languages = Table(
-    "character_languages", Base.metadata,
+    "character_languages",
+    Base.metadata,
     Column("character_id", Integer, ForeignKey("characters.id"), primary_key=True),
     Column("language_id", Integer, ForeignKey("languages.id"), primary_key=True),
 )
+
 
 # Enums
 class AlignmentEnum(Enum):
@@ -45,6 +58,7 @@ class AlignmentEnum(Enum):
     LE = "Lawful Evil"
     NE = "Neutral Evil"
     CE = "Chaotic Evil"
+
 
 class Character(Base):
     __tablename__ = "characters"
@@ -149,15 +163,21 @@ class Character(Base):
 
     @property
     def dexterity_save_bonus(self):
-        return self.dexterity_mod + (self.proficiency_bonus if self.dexterity_save else 0)
+        return self.dexterity_mod + (
+            self.proficiency_bonus if self.dexterity_save else 0
+        )
 
     @property
     def constitution_save_bonus(self):
-        return self.constitution_mod + (self.proficiency_bonus if self.constitution_save else 0)
+        return self.constitution_mod + (
+            self.proficiency_bonus if self.constitution_save else 0
+        )
 
     @property
     def intelligence_save_bonus(self):
-        return self.intelligence_mod + (self.proficiency_bonus if self.intelligence_save else 0)
+        return self.intelligence_mod + (
+            self.proficiency_bonus if self.intelligence_save else 0
+        )
 
     @property
     def wisdom_save_bonus(self):
@@ -197,6 +217,7 @@ class Character(Base):
     def __repr__(self):
         return f"<Character {self.name} (Level {self.level})>"
 
+
 class Race(Base):
     __tablename__ = "races"
     id = Column(Integer, primary_key=True)
@@ -212,6 +233,7 @@ class Race(Base):
     def __repr__(self):
         return f"<Race {self.name}>"
 
+
 class Subrace(Base):
     __tablename__ = "subraces"
     id = Column(Integer, primary_key=True)
@@ -224,13 +246,16 @@ class Subrace(Base):
     def __repr__(self):
         return f"<Subrace {self.name}>"
 
+
 class Class(Base):
     __tablename__ = "classes"
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False, unique=True, index=True)
     hit_die = Column(Integer)  # e.g., 6, 8, etc.
     primary_ability = Column(String)  # e.g., 'Charisma', 'Intelligence', etc.
-    saving_throw_proficiencies = Column(JSON)  # e.g., { 'strength': True, 'dexterity': False }
+    saving_throw_proficiencies = Column(
+        JSON
+    )  # e.g., { 'strength': True, 'dexterity': False }
     proficiencies = Column(JSON)  # Weapons, armor, tools
     subclass_available = Column(Boolean, default=True)
     features = relationship("Feature", backref="class_")
@@ -238,6 +263,7 @@ class Class(Base):
 
     def __repr__(self):
         return f"<Class {self.name}>"
+
 
 class Subclass(Base):
     __tablename__ = "subclasses"
@@ -248,6 +274,7 @@ class Subclass(Base):
 
     def __repr__(self):
         return f"<Subclass {self.name}>"
+
 
 class Background(Base):
     __tablename__ = "backgrounds"
@@ -266,6 +293,7 @@ class Background(Base):
     def __repr__(self):
         return f"<Background {self.name}>"
 
+
 class Feat(Base):
     __tablename__ = "feats"
     id = Column(Integer, primary_key=True)
@@ -275,6 +303,7 @@ class Feat(Base):
 
     def __repr__(self):
         return f"<Feat {self.name}>"
+
 
 class Spell(Base):
     __tablename__ = "spells"
@@ -292,6 +321,7 @@ class Spell(Base):
     def __repr__(self):
         return f"<Spell {self.name} (Level {self.level})>"
 
+
 class Item(Base):
     __tablename__ = "items"
     id = Column(Integer, primary_key=True)
@@ -305,6 +335,7 @@ class Item(Base):
     def __repr__(self):
         return f"<Item {self.name}>"
 
+
 class Skill(Base):
     __tablename__ = "skills"
     id = Column(Integer, primary_key=True)
@@ -313,6 +344,7 @@ class Skill(Base):
 
     def __repr__(self):
         return f"<Skill {self.name}>"
+
 
 class SkillProficiency(Base):
     __tablename__ = "skill_proficiencies"
@@ -326,6 +358,7 @@ class SkillProficiency(Base):
     def __repr__(self):
         return f"<SkillProficiency {self.skill.name} on Character {self.character_id}>"
 
+
 class Tool(Base):
     __tablename__ = "tools"
     id = Column(Integer, primary_key=True)
@@ -334,6 +367,7 @@ class Tool(Base):
 
     def __repr__(self):
         return f"<Tool {self.name}>"
+
 
 class ToolProficiency(Base):
     __tablename__ = "tool_proficiencies"
@@ -346,6 +380,7 @@ class ToolProficiency(Base):
     def __repr__(self):
         return f"<ToolProficiency {self.tool.name} on Character {self.character_id}>"
 
+
 class Language(Base):
     __tablename__ = "languages"
     id = Column(Integer, primary_key=True)
@@ -353,6 +388,7 @@ class Language(Base):
 
     def __repr__(self):
         return f"<Language {self.name}>"
+
 
 class Proficiency(Base):
     __tablename__ = "proficiencies"
@@ -362,14 +398,19 @@ class Proficiency(Base):
     type = Column(String, nullable=False)  # 'Skill' or 'Tool'
 
     def __repr__(self):
-        return f"<Proficiency {self.name} ({self.type}) on Character {self.character_id}>"
+        return (
+            f"<Proficiency {self.name} ({self.type}) on Character {self.character_id}>"
+        )
+
 
 class Feature(Base):
     __tablename__ = "features"
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False, unique=True)
     description = Column(Text)
-    feature_type = Column(String, nullable=False)  # e.g., 'Race', 'Class', 'Background', 'Subclass'
+    feature_type = Column(
+        String, nullable=False
+    )  # e.g., 'Race', 'Class', 'Background', 'Subclass'
     race_id = Column(Integer, ForeignKey("races.id"), nullable=True)
     subrace_id = Column(Integer, ForeignKey("subraces.id"), nullable=True)
     class_id = Column(Integer, ForeignKey("classes.id"), nullable=True)
@@ -379,6 +420,7 @@ class Feature(Base):
     def __repr__(self):
         return f"<Feature {self.name} ({self.feature_type})>"
 
+
 class Condition(Base):
     __tablename__ = "conditions"
     id = Column(Integer, primary_key=True)
@@ -387,6 +429,7 @@ class Condition(Base):
 
     def __repr__(self):
         return f"<Condition {self.name}>"
+
 
 class CharacterCondition(Base):
     __tablename__ = "character_conditions"
@@ -399,6 +442,7 @@ class CharacterCondition(Base):
 
     def __repr__(self):
         return f"<CharacterCondition {self.condition.name} on Character {self.character_id}>"
+
 
 def populate_defaults(session: Session):
     # Skills
@@ -487,7 +531,9 @@ def populate_defaults(session: Session):
             "ability_increases": {"constitution": 2},
             "size": "Medium",
             "darkvision": True,
-            "traits": {"dwarven_resilience": "You have advantage on saving throws against poison."}
+            "traits": {
+                "dwarven_resilience": "You have advantage on saving throws against poison."
+            },
         },
         {
             "name": "Elf",
@@ -495,7 +541,9 @@ def populate_defaults(session: Session):
             "ability_increases": {"dexterity": 2},
             "size": "Medium",
             "darkvision": True,
-            "traits": {"fey_ancestry": "You have advantage on saving throws against being charmed."}
+            "traits": {
+                "fey_ancestry": "You have advantage on saving throws against being charmed."
+            },
         },
         {
             "name": "Halfling",
@@ -503,7 +551,7 @@ def populate_defaults(session: Session):
             "ability_increases": {"dexterity": 2},
             "size": "Small",
             "darkvision": False,
-            "traits": {"lucky": "You can reroll a 1 on any d20 roll."}
+            "traits": {"lucky": "You can reroll a 1 on any d20 roll."},
         },
         {
             "name": "Dragonborn",
@@ -511,7 +559,9 @@ def populate_defaults(session: Session):
             "ability_increases": {"strength": 2, "charisma": 1},
             "size": "Medium",
             "darkvision": False,
-            "traits": {"breath_weapon": "You can use a breath weapon attack based on your draconic ancestry."}
+            "traits": {
+                "breath_weapon": "You can use a breath weapon attack based on your draconic ancestry."
+            },
         },
         {
             "name": "Gnome",
@@ -520,7 +570,9 @@ def populate_defaults(session: Session):
             "size": "Small",
             "darkvision": True,
             "traits": {
-                "gnome_cunning": "You have advantage on all Intelligence, Wisdom, and Charisma saving throws against magic."}
+                "gnome_cunning": "You have advantage on all Intelligence, Wisdom, and Charisma saving throws against "
+                "magic."
+            },
         },
         {
             "name": "Half-Elf",
@@ -528,7 +580,9 @@ def populate_defaults(session: Session):
             "ability_increases": {"charisma": 2, "choice1": 1, "choice2": 1},
             "size": "Medium",
             "darkvision": True,
-            "traits": {"fey_ancestry": "You have advantage on saving throws against being charmed."}
+            "traits": {
+                "fey_ancestry": "You have advantage on saving throws against being charmed."
+            },
         },
         {
             "name": "Half-Orc",
@@ -536,7 +590,9 @@ def populate_defaults(session: Session):
             "ability_increases": {"strength": 2, "constitution": 1},
             "size": "Medium",
             "darkvision": True,
-            "traits": {"relentless_endurance": "When reduced to 0 HP but not killed, you can drop to 1 HP instead."}
+            "traits": {
+                "relentless_endurance": "When reduced to 0 HP but not killed, you can drop to 1 HP instead."
+            },
         },
         {
             "name": "Tiefling",
@@ -544,7 +600,7 @@ def populate_defaults(session: Session):
             "ability_increases": {"charisma": 2, "intelligence": 1},
             "size": "Medium",
             "darkvision": True,
-            "traits": {"hellish_resistance": "You have resistance to fire damage."}
+            "traits": {"hellish_resistance": "You have resistance to fire damage."},
         },
         {
             "name": "Aasimar",
@@ -552,7 +608,7 @@ def populate_defaults(session: Session):
             "ability_increases": {"charisma": 2},
             "size": "Medium",
             "darkvision": True,
-            "traits": {"healing_hands": "You can heal others with a touch."}
+            "traits": {"healing_hands": "You can heal others with a touch."},
         },
         {
             "name": "Tabaxi",
@@ -560,7 +616,9 @@ def populate_defaults(session: Session):
             "ability_increases": {"dexterity": 2, "charisma": 1},
             "size": "Medium",
             "darkvision": True,
-            "traits": {"feline_agility": "You can double your speed until the end of the turn."}
+            "traits": {
+                "feline_agility": "You can double your speed until the end of the turn."
+            },
         },
         {
             "name": "Genasi",
@@ -569,7 +627,8 @@ def populate_defaults(session: Session):
             "size": "Medium",
             "darkvision": False,
             "traits": {
-                "elemental_affinity": "You have abilities based on your elemental ancestry (Air, Earth, Fire, Water)."}
+                "elemental_affinity": "You have abilities based on your elemental ancestry (Air, Earth, Fire, Water)."
+            },
         },
         {
             "name": "Tortle",
@@ -577,7 +636,7 @@ def populate_defaults(session: Session):
             "ability_increases": {"strength": 2, "wisdom": 1},
             "size": "Medium",
             "darkvision": False,
-            "traits": {"natural_armor": "You have a base AC of 17 while unarmored."}
+            "traits": {"natural_armor": "You have a base AC of 17 while unarmored."},
         },
         {
             "name": "Yuan-ti Pureblood",
@@ -585,7 +644,9 @@ def populate_defaults(session: Session):
             "ability_increases": {"charisma": 2, "intelligence": 1},
             "size": "Medium",
             "darkvision": True,
-            "traits": {"magic_resistance": "You have advantage on saving throws against spells and magical effects."}
+            "traits": {
+                "magic_resistance": "You have advantage on saving throws against spells and magical effects."
+            },
         },
         {
             "name": "Firbolg",
@@ -593,7 +654,9 @@ def populate_defaults(session: Session):
             "ability_increases": {"wisdom": 2, "strength": 1},
             "size": "Medium",
             "darkvision": False,
-            "traits": {"firbolg_magic": "You can cast Detect Magic and Disguise Self once per short rest."}
+            "traits": {
+                "firbolg_magic": "You can cast Detect Magic and Disguise Self once per short rest."
+            },
         },
         {
             "name": "Goliath",
@@ -601,7 +664,9 @@ def populate_defaults(session: Session):
             "ability_increases": {"strength": 2, "constitution": 1},
             "size": "Medium",
             "darkvision": False,
-            "traits": {"powerful_build": "You count as one size larger when determining carrying capacity."}
+            "traits": {
+                "powerful_build": "You count as one size larger when determining carrying capacity."
+            },
         },
         {
             "name": "Kenku",
@@ -609,7 +674,7 @@ def populate_defaults(session: Session):
             "ability_increases": {"dexterity": 2, "wisdom": 1},
             "size": "Medium",
             "darkvision": False,
-            "traits": {"mimicry": "You can mimic sounds you have heard."}
+            "traits": {"mimicry": "You can mimic sounds you have heard."},
         },
         {
             "name": "Lizardfolk",
@@ -617,7 +682,9 @@ def populate_defaults(session: Session):
             "ability_increases": {"constitution": 2, "wisdom": 1},
             "size": "Medium",
             "darkvision": False,
-            "traits": {"natural_armor": "Your AC is 13 + Dexterity modifier while unarmored."}
+            "traits": {
+                "natural_armor": "Your AC is 13 + Dexterity modifier while unarmored."
+            },
         },
         {
             "name": "Triton",
@@ -625,8 +692,8 @@ def populate_defaults(session: Session):
             "ability_increases": {"strength": 1, "constitution": 1, "charisma": 1},
             "size": "Medium",
             "darkvision": True,
-            "traits": {"amphibious": "You can breathe air and water."}
-        }
+            "traits": {"amphibious": "You can breathe air and water."},
+        },
         # You can add more races and subraces as desired
     ]
 
@@ -649,8 +716,10 @@ def populate_defaults(session: Session):
             "hit_die": 12,
             "primary_ability": "Strength",
             "saving_throw_proficiencies": {"strength": True, "constitution": True},
-            "proficiencies": {"weapons": ["simple", "martial"], "armor": ["light", "medium", "shields"]},
-            
+            "proficiencies": {
+                "weapons": ["simple", "martial"],
+                "armor": ["light", "medium", "shields"],
+            },
         },
         {
             "name": "Bard",
@@ -658,15 +727,16 @@ def populate_defaults(session: Session):
             "primary_ability": "Charisma",
             "saving_throw_proficiencies": {"dexterity": True, "charisma": True},
             "proficiencies": {"weapons": ["simple"], "armor": ["light"]},
-            
         },
         {
             "name": "Cleric",
             "hit_die": 8,
             "primary_ability": "Wisdom",
             "saving_throw_proficiencies": {"wisdom": True, "charisma": True},
-            "proficiencies": {"weapons": ["simple"], "armor": ["light", "medium", "shields"]},
-            
+            "proficiencies": {
+                "weapons": ["simple"],
+                "armor": ["light", "medium", "shields"],
+            },
         },
         {
             "name": "Druid",
@@ -674,17 +744,30 @@ def populate_defaults(session: Session):
             "primary_ability": "Wisdom",
             "saving_throw_proficiencies": {"intelligence": True, "wisdom": True},
             "proficiencies": {
-                "weapons": ["clubs", "daggers", "darts", "javelins", "maces", "quarterstaffs", "scimitars", "sickles",
-                            "slings", "spears"], "armor": ["light", "medium (no metal)", "shields (no metal)"]},
-            
+                "weapons": [
+                    "clubs",
+                    "daggers",
+                    "darts",
+                    "javelins",
+                    "maces",
+                    "quarterstaffs",
+                    "scimitars",
+                    "sickles",
+                    "slings",
+                    "spears",
+                ],
+                "armor": ["light", "medium (no metal)", "shields (no metal)"],
+            },
         },
         {
             "name": "Fighter",
             "hit_die": 10,
             "primary_ability": "Strength or Dexterity",
             "saving_throw_proficiencies": {"strength": True, "constitution": True},
-            "proficiencies": {"weapons": ["simple", "martial"], "armor": ["light", "medium", "heavy", "shields"]},
-            
+            "proficiencies": {
+                "weapons": ["simple", "martial"],
+                "armor": ["light", "medium", "heavy", "shields"],
+            },
         },
         {
             "name": "Monk",
@@ -692,41 +775,58 @@ def populate_defaults(session: Session):
             "primary_ability": "Dexterity and Wisdom",
             "saving_throw_proficiencies": {"strength": True, "dexterity": True},
             "proficiencies": {"weapons": ["simple", "shortswords"], "armor": []},
-            
         },
         {
             "name": "Paladin",
             "hit_die": 10,
             "primary_ability": "Charisma and Strength",
             "saving_throw_proficiencies": {"wisdom": True, "charisma": True},
-            "proficiencies": {"weapons": ["simple", "martial"], "armor": ["light", "medium", "heavy", "shields"]},
-            
+            "proficiencies": {
+                "weapons": ["simple", "martial"],
+                "armor": ["light", "medium", "heavy", "shields"],
+            },
         },
         {
             "name": "Ranger",
             "hit_die": 10,
             "primary_ability": "Dexterity and Wisdom",
             "saving_throw_proficiencies": {"strength": True, "dexterity": True},
-            "proficiencies": {"weapons": ["simple", "martial"], "armor": ["light", "medium", "shields"]},
-            
+            "proficiencies": {
+                "weapons": ["simple", "martial"],
+                "armor": ["light", "medium", "shields"],
+            },
         },
         {
             "name": "Rogue",
             "hit_die": 8,
             "primary_ability": "Dexterity",
             "saving_throw_proficiencies": {"dexterity": True, "intelligence": True},
-            "proficiencies": {"weapons": ["simple", "hand_crossbows", "longswords", "rapiers", "shortswords"],
-                              "armor": ["light"]},
-            
+            "proficiencies": {
+                "weapons": [
+                    "simple",
+                    "hand_crossbows",
+                    "longswords",
+                    "rapiers",
+                    "shortswords",
+                ],
+                "armor": ["light"],
+            },
         },
         {
             "name": "Sorcerer",
             "hit_die": 6,
             "primary_ability": "Charisma",
             "saving_throw_proficiencies": {"constitution": True, "charisma": True},
-            "proficiencies": {"weapons": ["daggers", "darts", "slings", "quarterstaffs", "light_crossbows"],
-                              "armor": []},
-            
+            "proficiencies": {
+                "weapons": [
+                    "daggers",
+                    "darts",
+                    "slings",
+                    "quarterstaffs",
+                    "light_crossbows",
+                ],
+                "armor": [],
+            },
         },
         {
             "name": "Warlock",
@@ -734,25 +834,33 @@ def populate_defaults(session: Session):
             "primary_ability": "Charisma",
             "saving_throw_proficiencies": {"wisdom": True, "charisma": True},
             "proficiencies": {"weapons": ["simple"], "armor": ["light"]},
-            
         },
         {
             "name": "Wizard",
             "hit_die": 6,
             "primary_ability": "Intelligence",
             "saving_throw_proficiencies": {"intelligence": True, "wisdom": True},
-            "proficiencies": {"weapons": ["daggers", "darts", "slings", "quarterstaffs", "light_crossbows"],
-                              "armor": []},
-            
+            "proficiencies": {
+                "weapons": [
+                    "daggers",
+                    "darts",
+                    "slings",
+                    "quarterstaffs",
+                    "light_crossbows",
+                ],
+                "armor": [],
+            },
         },
         {
             "name": "Artificer",
             "hit_die": 8,
             "primary_ability": "Intelligence",
             "saving_throw_proficiencies": {"constitution": True, "intelligence": True},
-            "proficiencies": {"weapons": ["simple"], "armor": ["light", "medium", "shields"]},
-            
-        }
+            "proficiencies": {
+                "weapons": ["simple"],
+                "armor": ["light", "medium", "shields"],
+            },
+        },
     ]
 
     for char_class in classes:
@@ -778,7 +886,8 @@ def populate_defaults(session: Session):
                 "I respect all faiths and seek to understand other religions.",
                 "I am always calm, even in the face of chaos.",
                 "I see omens in every event and action.",
-                "I have spent so long in the temple that I have little practical experience dealing with people in the outside world.",
+                "I have spent so long in the temple that I have little practical experience dealing with people in "
+                "the outside world.",
             ],
             "ideals": [
                 "Tradition: The ancient traditions of worship must be preserved.",
@@ -819,16 +928,19 @@ def populate_defaults(session: Session):
                 "Creativity: I never run the same con twice.",
             ],
             "bonds": [
-                "I fleeced the wrong person and must work to ensure that this individual never crosses paths with me or those I care about.",
+                "I fleeced the wrong person and must work to ensure that this individual never crosses paths with me "
+                "or those I care about.",
                 "I owe everything to my mentor—a horrible person who's probably rotting in jail somewhere.",
                 "Somewhere out there, I have a child who doesn't know me.",
-                "I come from a noble family, and one day I'll reclaim my lands and title from those who stole them from me.",
+                "I come from a noble family, and one day I'll reclaim my lands and title from those who stole them "
+                "from me.",
             ],
             "flaws": [
                 "I can't resist a pretty face.",
                 "I'm always in debt.",
                 "I'm convinced that no one could ever fool me the way I fool others.",
-                "I hate to admit it and will hate myself for it, but I'll run and preserve my own hide if the going gets tough.",
+                "I hate to admit it and will hate myself for it, but I'll run and preserve my own hide if the going "
+                "gets tough.",
             ],
         },
         {

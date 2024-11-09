@@ -1,9 +1,12 @@
+# models/game_preferences_models.py
+
 from enum import Enum
-from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy import Column, Integer, ForeignKey
 from sqlalchemy.orm import relationship, validates
 from sqlalchemy.types import Enum as SQLEnum
 
 from db.database import Base  # Import Base from your database module
+
 
 # Enums for controlled attributes
 class GameStyleEnum(Enum):
@@ -12,17 +15,20 @@ class GameStyleEnum(Enum):
     EXPLORATION = "exploration"
     MIXED = "mixed"
 
+
 class ToneEnum(Enum):
     LIGHTHEARTED = "lighthearted"
     SERIOUS = "serious"
     DARK = "dark"
     HUMOROUS = "humorous"
 
+
 class DifficultyEnum(Enum):
     EASY = "easy"
     MEDIUM = "medium"
     HARD = "hard"
     EXPERT = "expert"
+
 
 class ThemeEnum(Enum):
     FANTASY = "fantasy"
@@ -31,10 +37,13 @@ class ThemeEnum(Enum):
     MODERN = "modern"
     HISTORICAL = "historical"
 
+
 class GamePreferences(Base):
     __tablename__ = "game_preferences"
     id = Column(Integer, primary_key=True)
-    user_id = Column(String, ForeignKey("users.id"), nullable=False, unique=True)  # Assuming you have a User model
+    user_id = Column(
+        Integer, ForeignKey("users.id"), nullable=False, unique=True
+    )  # Changed to Integer to match User model
     game_style = Column(SQLEnum(GameStyleEnum), nullable=False)
     tone = Column(SQLEnum(ToneEnum), nullable=False)
     difficulty = Column(SQLEnum(DifficultyEnum), nullable=False)
@@ -45,29 +54,30 @@ class GamePreferences(Base):
     def __repr__(self):
         return f"<GamePreferences {self.user_id} - {self.game_style.value}>"
 
-    @validates('game_style')
-    def validate_game_style(self, key, value):
+    @validates("game_style")
+    def validate_game_style(self, value):
         if not isinstance(value, GameStyleEnum):
             raise ValueError(f"Invalid game style: {value}")
         return value
 
-    @validates('tone')
-    def validate_tone(self, key, value):
+    @validates("tone")
+    def validate_tone(self, value):
         if not isinstance(value, ToneEnum):
             raise ValueError(f"Invalid tone: {value}")
         return value
 
-    @validates('difficulty')
-    def validate_difficulty(self, key, value):
+    @validates("difficulty")
+    def validate_difficulty(self, value):
         if not isinstance(value, DifficultyEnum):
             raise ValueError(f"Invalid difficulty: {value}")
         return value
 
-    @validates('theme')
-    def validate_theme(self, key, value):
+    @validates("theme")
+    def validate_theme(self, value):
         if not isinstance(value, ThemeEnum):
             raise ValueError(f"Invalid theme: {value}")
         return value
+
 
 def populate_defaults(session):
     """Populate the database with default game preferences."""
@@ -103,7 +113,9 @@ def populate_defaults(session):
     ]
 
     for pref in default_preferences:
-        existing_pref = session.query(GamePreferences).filter_by(user_id=pref["user_id"]).first()
+        existing_pref = (
+            session.query(GamePreferences).filter_by(user_id=pref["user_id"]).first()
+        )
         if not existing_pref:
             new_pref = GamePreferences(
                 user_id=pref["user_id"],

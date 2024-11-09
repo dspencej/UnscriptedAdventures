@@ -1,3 +1,5 @@
+<!-- templates/index.html -->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -20,7 +22,7 @@
         <div class="modal-content">
             <h2 id="modalTitle">Confirm Action</h2>
             <p id="modalText">Are you sure?</p>
-            <input type="text" id="gameNameInput" placeholder="Enter save name" style="display: none;">
+            <label for="gameNameInput"></label><input type="text" id="gameNameInput" placeholder="Enter save name" style="display: none;">
             <div class="modal-buttons">
                 <button onclick="confirmAction()" class="modal-button confirm" id="confirmButton">Confirm</button>
                 <button onclick="closeModal()" class="modal-button cancel">Cancel</button>

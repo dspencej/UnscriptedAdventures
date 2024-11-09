@@ -10,3 +10,4 @@ resources/storytelling_resources/*.pdf
 tmp/
 directory_structure.txt
 print_dirs.py
+/print_directory_structure.py

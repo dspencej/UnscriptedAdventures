@@ -1,3 +1,5 @@
+<!-- templates/character_creation.html -->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -125,9 +127,8 @@
         }
 
         function calculateTotalAttributes() {
-            const total = ['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma']
+            document.getElementById('totalAttributesDisplay').textContent = ['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma']
                 .reduce((sum, attr) => sum + parseInt(document.getElementById(attr + 'Display').textContent), 0);
-            document.getElementById('totalAttributesDisplay').textContent = total;
         }
 
         function generateAttributes() {

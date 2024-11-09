@@ -1,9 +1,9 @@
 # FastAPI framework and related dependencies
-fastapi==0.103.1
+fastapi==0.115.4
 uvicorn==0.23.1
-starlette==0.27.0
+starlette==0.41.2
 aiofiles==23.1.0
-jinja2==3.1.2  # For templates in FastAPI
+jinja2==3.1.3
 
 # LLM and agent-related libraries
 ollama==0.3.3
@@ -21,8 +21,8 @@ ruff==0.7.0
 ipython==8.29.0
 markdownify==0.13.1
 requests==2.32.3
+pdfplumber==0.11.4
 urllib3==2.2.3
-PyPDF2==3.0.1
 colorama==0.4.6
 
 # SQLAlchemy for database ORM
@@ -31,3 +31,5 @@ alembic==1.12.0
 
 python-multipart==0.0.16
 python-dotenv==1.0.1
+
+itsdangerous==2.2.0
