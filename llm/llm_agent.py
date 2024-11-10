@@ -6,6 +6,7 @@ import re
 from typing import Any, Dict, List, Optional
 import urllib3
 from colorama import Fore, Style
+
 from llm.prompts import (
     continue_campaign_prompt,
     create_campaign_prompt,
@@ -28,7 +29,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 # Constants
-MAX_RETRIES = 3  # Maximum number of retries for handling inconsistencies
+MAX_RETRIES = 6
 
 # Import ORM models and database utilities
 from sqlalchemy.orm import Session  # noqa: E402
@@ -36,42 +37,52 @@ from models.save_game_models import SavedGame, ConversationPair  # noqa: E402
 
 
 # Helper Functions
-async def parse_response(agent_name: str, response: str) -> Optional[Dict[str, Any]]:
-    logger.debug(
-        f"{Fore.MAGENTA}[PARSING] Response from {Fore.BLUE}{agent_name}: {Fore.GREEN}{response}{Style.RESET_ALL}"
-    )
+async def parse_response(
+    agent_name: str, response: str, expected_keys: List[str]
+) -> Optional[Dict[str, Any]]:
+    logger.info(f"{Fore.GREEN}[PARSING] Response from {agent_name}{Style.RESET_ALL}\n")
+    logger.debug(f"{Fore.BLUE}{response}{Style.RESET_ALL}\n")
     try:
+        # Attempt to extract and parse JSON
         json_str = extract_json_from_text(response)
         if json_str:
             parsed_json = json.loads(json_str)
-            logger.debug(
-                f"{Fore.MAGENTA}[SUCCESS] Parsed JSON from {Fore.BLUE}{agent_name}: "
-                f"{Fore.GREEN}{parsed_json}{Style.RESET_ALL}"
+            logger.info(
+                f"{Fore.GREEN}[SUCCESS] Parsed JSON from {agent_name}{Style.RESET_ALL}\n"
             )
+            logger.debug(f"{Fore.BLUE}{parsed_json}{Style.RESET_ALL}\n")
+
+            # Validate expected keys are present
+            missing_keys = [key for key in expected_keys if key not in parsed_json]
+            if missing_keys:
+                logger.warning(
+                    f"{Fore.YELLOW}[WARNING] Missing expected keys in JSON from {agent_name}. "
+                    f"Expected keys: {expected_keys}, Missing keys: {missing_keys}{Style.RESET_ALL}"
+                )
+                return None
             return parsed_json
         else:
             logger.warning(
-                f"{Fore.YELLOW}[WARNING] No valid JSON found in response from {Fore.BLUE}{agent_name}. "
-                f"Using raw response.{Style.RESET_ALL}"
+                f"{Fore.YELLOW}[WARNING] No valid JSON found in response from {agent_name}. "
             )
-            return {"raw_response": response}
+            return None
     except json.JSONDecodeError as e:
+        # Log error and set return to None to trigger feedback
         logger.error(
             f"{Fore.RED}[ERROR] Failed to decode JSON from {Fore.BLUE}{agent_name}. Error: {e}{Style.RESET_ALL}"
         )
         return None
 
 
-async def send_feedback_and_retry(
+async def send_feedback(
     agent, agent_name: str, expected_keys: List[str], previous_response: str
 ) -> Optional[dict]:
     feedback_msg_content = format_feedback_prompt(expected_keys, previous_response)
-    feedback_msg = [{"content": feedback_msg_content, "role": "system"}]
-
-    logger.debug(
-        f"{Fore.MAGENTA}[FEEDBACK] Sending feedback to {Fore.BLUE}{agent_name}: "
-        f"{Fore.MAGENTA}{feedback_msg}{Style.RESET_ALL}"
+    feedback_msg = [{"content": feedback_msg_content, "role": "user"}]
+    logger.info(
+        f"{Fore.GREEN}[SENDING FEEDBACK] Sending feedback to {agent_name}{Style.RESET_ALL}\n"
     )
+    logger.debug(f"{Fore.BLUE}{feedback_msg}{Style.RESET_ALL}{Style.RESET_ALL}\n")
 
     if not agent:
         logger.error(
@@ -83,23 +94,12 @@ async def send_feedback_and_retry(
         feedback_response = agent.generate_reply(messages=feedback_msg)
         if hasattr(feedback_response, "__await__"):
             feedback_response = await feedback_response
-        logger.debug(
-            f"{Fore.MAGENTA}[FEEDBACK RESPONSE] Raw response from {Fore.BLUE}{agent_name}: "
-            f"{Fore.GREEN}{feedback_response}{Style.RESET_ALL}"
+        logger.info(
+            f"{Fore.GREEN}[FEEDBACK RESPONSE] Raw response from {agent_name}{Style.RESET_ALL}\n"
         )
-        parsed_feedback = await parse_response(agent_name, feedback_response)
-        if parsed_feedback and isinstance(parsed_feedback, dict):
-            logger.debug(
-                f"{Fore.MAGENTA}[PARSED FEEDBACK] Parsed feedback returned: "
-                f"{Fore.BLUE}{parsed_feedback}{Style.RESET_ALL}"
-            )
-            return parsed_feedback
-        else:
-            logger.error(
-                f"{Fore.RED}[ERROR] Invalid feedback format from {Fore.BLUE}{agent_name}. "
-                f"Feedback response: {parsed_feedback}{Style.RESET_ALL}"
-            )
-            return None
+        logger.debug(f"{Fore.BLUE}{feedback_response}{Style.RESET_ALL}\n")
+        return feedback_response
+
     except Exception as e:
         logger.error(
             f"{Fore.RED}[UNEXPECTED EXCEPTION] Error during feedback and retry with {agent_name}: {e}{Style.RESET_ALL}"
@@ -122,68 +122,61 @@ async def get_agent_response(
         return None
 
     retries = 0
-    response = ""
     while retries < max_retries:
         try:
-            logger.debug(
-                f"{Fore.MAGENTA}[ATTEMPT {retries + 1}/{max_retries}] Sending prompt to {Fore.BLUE}{agent_name}: "
-                f"{Fore.MAGENTA}{msg}{Style.RESET_ALL}"
+            attempt_number = retries + 1
+            logger.info(
+                f"{Fore.GREEN}[ATTEMPT {attempt_number}/{max_retries}] Sending message to {Fore.BLUE}{agent_name}{Style.RESET_ALL}\n"
             )
+            logger.debug(f"{Fore.BLUE}{msg}{Style.RESET_ALL}\n")
+
             response = agent.generate_reply(messages=msg)
             if hasattr(response, "__await__"):
                 response = await response
-            logger.debug(
-                f"{Fore.MAGENTA}[RECEIVED] Raw response from {Fore.BLUE}{agent_name}: "
-                f"{Fore.GREEN}{response}{Style.RESET_ALL}"
+            logger.info(
+                f"{Fore.GREEN}[RECEIVED] Raw response from {agent_name}{Style.RESET_ALL}\n"
             )
-            parsed_response = await parse_response(agent_name, response)
-            if not parsed_response or not isinstance(parsed_response, dict):
-                raise ValueError(f"Invalid response format from {agent_name}")
+            logger.debug(f"{Fore.BLUE}{response}{Style.RESET_ALL}\n")
+            parsed_response = await parse_response(agent_name, response, expected_keys)
 
-            # Check for expected keys
-            missing_keys = [key for key in expected_keys if key not in parsed_response]
-            if missing_keys:
-                # Log missing keys but continue with retry using the original response
-                logger.error(
-                    f"{Fore.RED}[KEY MISSING] Expected key(s) '{missing_keys}' missing in {agent_name}'s response."
-                    f"Proceeding to retry with original response for feedback.{Style.RESET_ALL}"
+            # If parsing fails or keys are missing, send feedback and retry
+            if not parsed_response or any(
+                key not in parsed_response for key in expected_keys
+            ):
+                logger.warning(
+                    f"{Fore.YELLOW}[REQUESTING FEEDBACK] Response from {agent_name}{Style.RESET_ALL}\n"
                 )
-                continue
+
+                feedback_response = await send_feedback(
+                    agent, agent_name, expected_keys, response
+                )
+
+                parsed_response = await parse_response(
+                    agent_name, feedback_response, expected_keys
+                )
+
+                # Check if feedback response has the required keys
+                if parsed_response and all(
+                    key in parsed_response for key in expected_keys
+                ):
+                    return parsed_response  # Return if feedback response is valid
+                else:
+                    retries += 1  # Retry if feedback did not resolve the issue
+                    continue
 
             return parsed_response
 
-        except (ValueError, KeyError) as e:
-            logger.error(
-                f"{Fore.RED}[EXCEPTION] {str(e)} Error handling response from {Fore.BLUE}{agent_name} on attempt "
-                f"{retries + 1}.{Style.RESET_ALL}"
-            )
         except Exception as e:
             logger.error(
-                f"{Fore.RED}[UNEXPECTED EXCEPTION] Error during agent response from {Fore.BLUE}{agent_name}: "
+                f"{Fore.RED}[UNEXPECTED EXCEPTION] Error during agent response from {agent_name}: "
                 f"{e}{Style.RESET_ALL}"
             )
             logger.error(traceback.format_exc())
 
         retries += 1
-        logger.debug(
-            f"{Fore.MAGENTA}[RETRY] Sending feedback and attempting retry process.{Style.RESET_ALL}"
-        )
 
-        # Retry with feedback if keys are missing
-        extracted = await send_feedback_and_retry(
-            agent, agent_name, expected_keys, previous_response=response
-        )
-        if extracted:
-            return extracted
-        else:
-            logger.warning(
-                f"{Fore.YELLOW}[RETRY FAILED] Attempt {retries}/{max_retries} failed.{Style.RESET_ALL}"
-            )
-
-    logger.warning(
-        f"{Fore.RED}[FINAL FAILURE] All retries exhausted. Returning None.{Style.RESET_ALL}"
-    )
-    return None
+    logger.warning(f"{Fore.RED}[FINAL FAILURE] All retries exhausted.{Style.RESET_ALL}")
+    return {"response": ""}
 
 
 def extract_json_from_text(response: str) -> Optional[str]:
@@ -215,12 +208,28 @@ def build_conversation_context(
     user_preferences: Dict[str, str],
     current_character: Dict[str, Any],
 ) -> str:
+    # Define fields to exclude from the character details
+    excluded_fields = {
+        "id",
+        "experience_points",
+        "max_hit_points",
+        "current_hit_points",
+    }
+
+    # Build preferences text
     preferences_text = "\n".join(
         [f"- {key}: {value}" for key, value in user_preferences.items()]
     )
+
+    # Filter out excluded fields and build character details text
     character_details = "\n".join(
-        [f"- {key.capitalize()}: {value}" for key, value in current_character.items()]
+        [
+            f"- {key.capitalize()}: {value}"
+            for key, value in current_character.items()
+            if key.lower() not in excluded_fields
+        ]
     )
+
     return f"User Preferences:\n{preferences_text}\n\nCharacter Details:\n{character_details}\n"
 
 
@@ -233,10 +242,10 @@ async def handle_storyline_feedback(
             f"{Fore.MAGENTA}[ATTEMPT {retries + 1}/{max_retries}] Handling storyline feedback.{Style.RESET_ALL}"
         )
         revised_response = await get_agent_response(
-            agent, agent_name, dm_msg, ["dm_response"]
+            agent, agent_name, dm_msg, ["response"]
         )
         if revised_response and isinstance(revised_response, dict):
-            dm_response_text = revised_response.get("dm_response")
+            dm_response_text = revised_response.get("response")
             if dm_response_text:
                 return revised_response
         retries += 1
@@ -253,14 +262,13 @@ async def generate_gm_response(
     db: Session,
 ) -> Dict[str, str]:
     try:
-        logger.debug("[START] Generating GM response.")
-
+        logger.debug(f"{Fore.MAGENTA}[START] Generating GM response.{Style.RESET_ALL}")
         # Retrieve the saved game
         saved_game = db.query(SavedGame).filter_by(id=saved_game_id).first()
         if not saved_game:
             logger.error(f"Saved game with ID {saved_game_id} not found.")
             return {
-                "dm_response": "Error: Unable to find the saved game session. Please start a new game.",
+                "response": "Error: Unable to find the saved game session. Please start a new game.",
                 "full_storyline": "",
             }
 
@@ -279,19 +287,24 @@ async def generate_gm_response(
                 for pair in conversation_pairs
             ]
         )
-        logger.debug(f"[STORYLINE RECONSTRUCTED] Full storyline: {storyline}")
+        logger.info(
+            f"{Fore.GREEN}[RECONSTRUCTING STORYLINE] {Style.RESET_ALL}\n"
+        )
+        logger.debug(
+            f"{Fore.BLUE}Full storyline: {storyline}{Style.RESET_ALL}\n"
+        )
 
         dm_agent = agents.get("DMAgent")
         if not dm_agent:
             return {
-                "dm_response": "Error starting a new campaign.",
+                "response": "Error starting a new campaign.",
                 "full_storyline": storyline,
             }
 
         storyteller_agent = agents.get("StorytellerAgent")
         if not storyteller_agent:
             return {
-                "dm_response": "Error validating the storyline.",
+                "response": "Error validating the storyline.",
                 "full_storyline": storyline,
             }
 
@@ -303,12 +316,10 @@ async def generate_gm_response(
             dm_prompt_content = create_campaign_prompt(user_input, context)
             dm_msg = [{"content": dm_prompt_content, "role": "user"}]
             dm_response = await get_agent_response(
-                dm_agent, "DMAgent", dm_msg, ["dm_response"]
+                dm_agent, "DMAgent", dm_msg, ["response"]
             )
             dm_response_text = (
-                dm_response.get("dm_response", "")
-                if isinstance(dm_response, dict)
-                else ""
+                dm_response.get("response", "") if isinstance(dm_response, dict) else ""
             )
 
             # 2. Validate storyline consistency
@@ -328,12 +339,12 @@ async def generate_gm_response(
                 revise_prompt_content = revise_storyline_prompt(
                     context, dm_response_text, feedback
                 )
-                revise_msg = [{"content": revise_prompt_content, "role": "system"}]
+                revise_msg = [{"content": revise_prompt_content, "role": "user"}]
                 revised_response = await get_agent_response(
-                    dm_agent, "DMAgent", revise_msg, ["dm_response"]
+                    dm_agent, "DMAgent", revise_msg, ["response"]
                 )
                 dm_response_text = (
-                    revised_response.get("dm_response", "")
+                    revised_response.get("response", "")
                     if isinstance(revised_response, dict)
                     else ""
                 )
@@ -363,13 +374,13 @@ async def generate_gm_response(
                     context, dm_response_text, options_feedback
                 )
                 revise_options_msg = [
-                    {"content": revise_options_prompt_content, "role": "system"}
+                    {"content": revise_options_prompt_content, "role": "user"}
                 ]
                 revised_options_response = await get_agent_response(
-                    dm_agent, "DMAgent", revise_options_msg, ["dm_response"]
+                    dm_agent, "DMAgent", revise_options_msg, ["response"]
                 )
                 dm_response_text = (
-                    revised_options_response.get("dm_response", "")
+                    revised_options_response.get("response", "")
                     if isinstance(revised_options_response, dict)
                     else ""
                 )
@@ -385,7 +396,7 @@ async def generate_gm_response(
             db.add(new_conversation_pair)
             db.commit()
 
-            return {"dm_response": dm_response_text, "full_storyline": storyline}
+            return {"response": dm_response_text, "full_storyline": storyline}
 
         else:
             # 1. Validate player's action for ongoing campaign
@@ -414,17 +425,17 @@ async def generate_gm_response(
                     context, storyline, user_input
                 )
                 inform_feedback_msg = [
-                    {"content": inform_feedback_prompt_content, "role": "system"}
+                    {"content": inform_feedback_prompt_content, "role": "user"}
                 ]
                 inform_feedback_response = await get_agent_response(
-                    dm_agent, "DMAgent", inform_feedback_msg, ["dm_response"]
+                    dm_agent, "DMAgent", inform_feedback_msg, ["response"]
                 )
                 dm_response_text = (
-                    inform_feedback_response.get("dm_response", "")
+                    inform_feedback_response.get("response", "")
                     if isinstance(inform_feedback_response, dict)
                     else ""
                 )
-                return {"dm_response": dm_response_text, "full_storyline": storyline}
+                return {"response": dm_response_text, "full_storyline": storyline}
 
             # 3. Continue campaign
             dm_continue_prompt_content = continue_campaign_prompt(
@@ -432,12 +443,10 @@ async def generate_gm_response(
             )
             dm_continue_msg = [{"content": dm_continue_prompt_content, "role": "user"}]
             dm_response = await get_agent_response(
-                dm_agent, "DMAgent", dm_continue_msg, ["dm_response"]
+                dm_agent, "DMAgent", dm_continue_msg, ["response"]
             )
             dm_response_text = (
-                dm_response.get("dm_response", "")
-                if isinstance(dm_response, dict)
-                else ""
+                dm_response.get("response", "") if isinstance(dm_response, dict) else ""
             )
 
             # 4. Validate storyline in continuation
@@ -445,7 +454,7 @@ async def generate_gm_response(
                 context, dm_response_text
             )
             storyline_validation_msg = [
-                {"content": storyline_validation_prompt_content, "role": "system"}
+                {"content": storyline_validation_prompt_content, "role": "user"}
             ]
             storyline_feedback_response = await get_agent_response(
                 storyteller_agent,
@@ -465,13 +474,13 @@ async def generate_gm_response(
                     context, dm_response_text, storyline_feedback
                 )
                 revise_storyline_msg = [
-                    {"content": revise_storyline_prompt_content, "role": "system"}
+                    {"content": revise_storyline_prompt_content, "role": "user"}
                 ]
                 revised_storyline_response = await get_agent_response(
-                    dm_agent, "DMAgent", revise_storyline_msg, ["dm_response"]
+                    dm_agent, "DMAgent", revise_storyline_msg, ["response"]
                 )
                 dm_response_text = (
-                    revised_storyline_response.get("dm_response", "")
+                    revised_storyline_response.get("response", "")
                     if isinstance(revised_storyline_response, dict)
                     else ""
                 )
@@ -501,13 +510,13 @@ async def generate_gm_response(
                     context, dm_response_text, options_feedback
                 )
                 revise_options_msg = [
-                    {"content": revise_options_prompt_content, "role": "system"}
+                    {"content": revise_options_prompt_content, "role": "user"}
                 ]
                 revised_options_response = await get_agent_response(
-                    dm_agent, "DMAgent", revise_options_msg, ["dm_response"]
+                    dm_agent, "DMAgent", revise_options_msg, ["response"]
                 )
                 dm_response_text = (
-                    revised_options_response.get("dm_response", "")
+                    revised_options_response.get("response", "")
                     if isinstance(revised_options_response, dict)
                     else ""
                 )
@@ -524,8 +533,8 @@ async def generate_gm_response(
             db.add(new_conversation_pair)
             db.commit()
 
-            return {"dm_response": dm_response_text, "full_storyline": storyline}
+            return {"response": dm_response_text, "full_storyline": storyline}
     except Exception as e:
         logger.error(f"[ERROR] Error in GM response generation: {e}")
         logger.error(traceback.format_exc())
-        return {"dm_response": "Error generating GM response.", "full_storyline": ""}
+        return {"response": "Error generating GM response.", "full_storyline": ""}

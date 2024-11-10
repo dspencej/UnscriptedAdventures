@@ -33,3 +33,4 @@ python-multipart==0.0.16
 python-dotenv==1.0.1
 
 itsdangerous==2.2.0
+rich==13.9.4

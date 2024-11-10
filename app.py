@@ -60,8 +60,8 @@ def get_current_user(db: Session = Depends(get_db)):
     return user
 
 
-# Logging configuration
-logging.basicConfig(level=logging.INFO)
+# Logging Configuration
+logging.basicConfig(level=logging.INFO, format="%(message)s", datefmt="[%X]")
 logger = logging.getLogger(__name__)
 
 # Initialize the database and create tables if they do not exist
@@ -177,7 +177,7 @@ async def interact(
     )
 
     gm_response_text = (
-        gm_response.get("dm_response", "Unknown response")
+        gm_response.get("response", "Unknown response")
         if isinstance(gm_response, dict)
         else "Unknown response"
     )
@@ -654,17 +654,10 @@ async def post_llm_config(request: Request):
     valid_models = {
         "openai": ["gpt-3.5-turbo", "gpt-4"],
         "ollama": [
-            "mistral:v0.3",
-            "mistral:7b-instruct-v0.2-q8_0",
-            "orca-mini:latest",
-            "nomic-embed-text:latest",
             "llama3:latest",
-            "llama3:instruct",
-            "mistral:7b-instruct",
             "mistral:latest",
-            "mistral:instruct",
-            "llama2:70b",
-            "llama2:13b",
+            "llama3.2:latest",
+            "llama3.1:latest",
         ],
     }
 

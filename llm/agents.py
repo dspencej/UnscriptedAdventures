@@ -92,16 +92,7 @@ def create_dm_agent(llm_config: Dict[str, Any]) -> ConversableAgent:
     dm_agent = ConversableAgent(
         name="DMAgent",
         system_message=(
-            "You are the Game Master (GM) in a campaign for the world's Most Popular role playing game (5th Edition), "
-            "guiding a single player"
-            "through an immersive and engaging storytelling experience."
-            "Your responsibilities include creating consistent, coherent narratives that align with the player's "
-            "preferences and the previous storyline."
-            "Always follow the instructions provided in the prompts, and ensure that your responses are in the "
-            "required JSON format."
-            "Do not include any text outside of the JSON block. "
-            "Do not ask the player any questions; instead, use the provided context and previous storyline to craft "
-            "the next scene."
+            "You are the Game Master (GM) in a campaign for the world's Most Popular role playing game (5th Edition)."
         ),
         llm_config=llm_config,
         human_input_mode="NEVER",
@@ -122,14 +113,7 @@ def create_storyteller_agent(llm_config: Dict[str, Any]) -> ConversableAgent:
     storyteller_agent = ConversableAgent(
         name="StorytellerAgent",
         system_message=(
-            "You are a Storytelling Expert for a campaign in the world's Most Popular role playing game (5th Edition)"
-            "Your role is to objectively evaluate the campaign storyline, ensuring it aligns with the player's "
-            "preferences and maintains consistency with previous events."
-            "Provide constructive feedback on narrative structure, character development, plot consistency, "
-            "and adherence to the player's preferences."
-            "Do not introduce new story elements or narrate the story. "
-            "Always respond in the required JSON format. "
-            "Do not include any text outside of the JSON block."
+            "You are a Storytelling Expert for a campaign in the world's Most Popular role playing game (5th Edition)."
         ),
         llm_config=llm_config,
         human_input_mode="NEVER",

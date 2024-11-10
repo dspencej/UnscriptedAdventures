@@ -2,348 +2,296 @@
 
 
 def create_campaign_prompt(user_input, context):
-    return (
-        f"You are the Game Master (GM) for a campaign in the world's Most Popular role playing game (5th Edition). "
-        f"You have one player in your campaign."
-        f"Create a rich storyline based on the player's game preferences.\n"
-        f"**Player Preferences and Character Details:**\n{context}\n\n"
-        f"Respond to the player's input in your response.\n"
-        f"**Player Input:**\n{user_input}\n\n"
-        f"**Instructions:**\n"
-        f"- Begin with a **scene description**, followed by an interaction type (e.g., dialogue choices, skill check, "
-        f"free exploration).\n"
-        f"- Alternate between different styles of engagement, sometimes offering open-ended actions, sometimes "
-        f"focusing on dialogue or skill challenges.\n"
-        f"- Keep descriptions vivid, add sensory details, and create an enticing atmosphere.\n"
-        f"- Introduce **narrative hooks or mysteries** that encourage exploration and curiosity.\n"
-        f"- Occasionally reference past actions to create continuity and consequences.\n"
-        f"- Maintain consistency with **5E game lore and mechanics**.\n"
-        f"- **Always respond in JSON format with the following structure:**\n\n"
-        f"```json\n"
-        f"{{\n"
-        f'  "dm_response": "<Narrative response here as a single string, incorporating scene details, interaction '
-        f'type, and options (if any)>"\n'
-        f"}}\n"
-        f"```\n"
-        f"- **Do not include any text outside of the JSON block. Only provide the JSON response.**\n\n"
-        f"**Example of Expected Response:**\n"
-        f"```json\n"
-        f"{{\n"
-        f'  "dm_response": "The sun sets over the tranquil village of Everwood as you, Aria the Elven Ranger, '
-        f"return from a day of scouting. The scent of pine lingers in the crisp evening air. As you approach the "
-        f"village square, a hush falls over the townsfolk, and all eyes turn to the distant horizon where ominous "
-        f'storm clouds gather. Suddenly, the town elder approaches you with a grave expression. \\"A darkness is '
-        f'coming, Aria,\\" he whispers. \\"We need your help.\\"\\n\\nOptions:\\n1. Agree to help and ask for more '
-        f"details about the impending darkness.\\n2. Climb the tallest tree to get a better view of the approaching "
-        f"storm.\\n3. Rally the villagers to prepare defenses.\\n4. Seek out your old mentor who lives on the "
-        f"outskirts of the village for guidance.\\n5. Use a secret passage you discovered as a child to venture "
-        f'toward the storm and investigate alone."\n'
-        f"}}\n"
-        f"```\n"
-    )
+    return f"""
+    You are the Game Master (GM) for a campaign in a role-playing game based on the player's preferences and 5th Edition mechanics. Create an immersive, consistent world setting while introducing a compelling storyline.
+
+    **Player Preferences and Character Details:**
+    {context}
+
+    **Player Input:**
+    {user_input}
+
+    **Instructions:**
+    1. Begin with a **rich, vivid scene description** to set the tone and atmosphere. Describe multiple sensory details, focusing on:
+        - **Visual elements** (colors, textures, movement)
+        - **Sounds** (background noises, specific auditory cues)
+        - **Scents** (environmental smells, noticeable aromas)
+        - **Textures or sensations** (ambient temperature, weather, tactile elements)
+    2. Integrate potential **interaction types** within the scene, such as:
+        - **Dialogue choices** for conversations with NPCs.
+        - **Skill checks** (e.g., perception, insight, investigation) to build tension or reveal hidden details.
+        - **Open-ended exploration** to allow freedom in player actions.
+    3. Use sensory details to create a layered environment, drawing the player’s attention to specific details that suggest deeper mysteries or potential paths of action.
+    4. Introduce **narrative hooks or small mysteries** that encourage curiosity and exploration without enforcing a specific direction.
+    5. Maintain continuity with previous player actions to build a cohesive storyline, weaving in prior events where appropriate.
+    6. Provide a sense of purpose and subtle direction, offering multiple choices for how the player might proceed.
+    7. Ensure all responses align with **5E mechanics**.
+    8. Avoid giving the player information intended for the GM only, such as DCs or hidden mechanics.
+    9. Assume the player is already aware of their character's status, race, and class, so avoid repeating this information.
+    10. **Only respond in JSON format, using the structure below:**
+
+    ```json
+    {{
+        "response": "<Narrative response here as a single string, incorporating rich sensory details, layered interactions, and enticing narrative elements>"
+    }}
+    ```
+
+    11. **No additional text outside the JSON block. Only provide the JSON response. Do not include nested keys.**
+    """
 
 
 def continue_campaign_prompt(context, previous_storyline, user_input):
-    return (
-        f"You are the Game Master (GM) for an ongoing campaign in the world's Most Popular role playing game (5th "
-        f"Edition)."
-        f"Continue the story based on the player's input and maintain consistency with their game preferences.\n\n"
-        f"**Player Preferences and Character Details:**\n{context}\n\n"
-        f"**Previous Storyline:**\n{previous_storyline}\n\n"
-        f"Respond to the player's input in your response.\n"
-        f"**Player Input:**\n{user_input}\n\n"
-        f"**Instructions:**\n"
-        f"- Use varying scene descriptions, shifting between intense encounters and quiet, suspenseful moments.\n"
-        f"- Alternate between interaction types:\n"
-        f"  - **Dialogue choices** when speaking with NPCs.\n"
-        f"  - **Skill challenges** (e.g., stealth, perception) to introduce risks and rewards.\n"
-        f"  - **Open-ended exploration** to allow the player freedom in their actions.\n"
-        f"- Build suspense by adding mysteries or foreshadowing events based on past player choices.\n"
-        f"- Include moments of reflection, emotional depth, or stakes that resonate with the player's character.\n"
-        f"- **Always respond in JSON format:**\n\n"
-        f"```json\n"
-        f"{{\n"
-        f'  "dm_response": "<Your narrative response here as a single string>"\n'
-        f"}}\n"
-        f"```\n"
-        f"- **Do not include any text outside of the JSON block. Only provide the JSON response.**\n\n"
-        f"**Examples of Expected Responses:**\n"
-        f"```json\n"
-        f"{{\n"
-        f'  "dm_response": "You decide to rally the villagers to prepare defenses. The town square buzzes with '
-        f"activity as you assign tasks: barricading entrances, sharpening weapons, and setting up watchtowers. The "
-        f"villagers look to you with a mix of fear and hope. As night falls, a distant howl pierces the silence, "
-        f"sending a chill down everyone's spine. Suddenly, a shadowy figure emerges from the forest "
-        f"edge.\\n\\nOptions:\\n1. Confront the figure and demand its identity.\\n2. Order the archers to ready their "
-        f"bows and await your signal.\\n3. Encourage the villagers to stand firm and not show fear.\\n4. Use your "
-        f"knowledge of the forest to set a trap for any approaching threats.\\n5. Secretly leave the village to seek "
-        f'out the source of the howl alone."\n'
-        f"}}\n"
-        f"```\n"
-    )
+    return f"""
+    You are the Game Master (GM) for an ongoing campaign in a role-playing game. Continue the story based on the player's input and maintain consistency with their preferences and established storyline.
+
+    **Player Preferences and Character Details:**
+    {context}
+
+    **Current Storyline:**
+    {previous_storyline}
+
+    **Player Input:**
+    {user_input}
+
+    **Instructions:**
+    1. Begin with an **immersive scene description** that aligns with the established setting. Include:
+        - **Vivid sensory details** (sights, sounds, textures, and scents).
+        - **Atmospheric elements** that create tension or suspense.
+    2. Present a mix of interaction types, incorporating:
+        - **Dialogue choices** for NPC interactions, allowing varied responses.
+        - **Skill challenges** (e.g., stealth, perception, insight) to add layers of tension.
+        - **Open-ended exploration** to encourage the player’s freedom in decision-making.
+        - **Do NOT limit to these examples only.**
+    3. Adhere to classic D&D storytelling structure:
+        - Introduce **clear narrative hooks** to present options for player actions without dictating a specific direction.
+        - Use **foreshadowing or dramatic reveals** as appropriate to build anticipation and deepen the storyline.
+        - Include **moments for rest, reflection, or discovery** to provide narrative balance after intense encounters.
+    4. Avoid adding new items, abilities, or settings unless directly prompted by the player’s input.
+    5. Focus on enhancing the scene’s existing elements through detail and depth rather than altering them.
+    6. Do NOT reveal GM-only information to the player, such as DCs or hidden story mechanics.
+    7. Assume the player already knows their character’s current status, race, and class, so avoid repeating this information.
+    8. **Respond in JSON format only:**
+
+    ```json
+    {{
+        "response": "<Your narrative response here as a single string, incorporating sensory detail, interaction options, and storyline continuity>"
+    }}
+    ```
+
+    9. **Do not include any text outside of the JSON block. Only provide the JSON response. Do not include nested keys.**
+    """
 
 
 def validate_storyline_prompt(context, storyline):
-    return (
-        f"Your task is to review the campaign storyline for alignment with the player's game preferences, "
-        f"ensuring immersive and engaging narration that flows consistently with previous events.\n\n"
-        f"**Player Preferences and Character Details:**\n{context}\n\n"
-        f"**Storyline:**\n{storyline}\n\n"
-        f"**Instructions:**\n"
-        f"1. Verify that the storyline maintains consistency with the player's preferences (e.g., tone, theme, "
-        f"difficulty level) and previous storyline context.\n"
-        f"2. Ensure the narrative is immersive and progresses effectively, with rich descriptions, appropriate "
-        f"pacing, and intriguing developments.\n"
-        f"3. Identify any aspects of the storyline that might break immersion, create inconsistencies, or contradict "
-        f"the player's established preferences.\n"
-        f"4. **Only provide feedback if there are misalignments with preferences, narrative inconsistencies, "
-        f"stalled progression, or issues with immersion quality.**\n\n"
-        f"**Response Format:**\n"
-        f"```json\n"
-        f"{{\n"
-        f'  "feedback": "<Your feedback here, or empty string>"\n'
-        f"}}\n"
-        f"```\n\n"
-        f"**Examples of Feedback:**\n"
-        f"- **Example of theme misalignment:**\n"
-        f"```json\n"
-        f"{{\n"
-        f'  "feedback": "The storyline introduces a spaceship, which conflicts with the player\'s preference for a '
-        f'medieval fantasy theme."\n'
-        f"}}\n"
-        f"```\n"
-        f"- **Example of difficulty misalignment:**\n"
-        f"```json\n"
-        f"{{\n"
-        f'  "feedback": "The challenges presented are too easy, not matching the player\'s preference for a hard '
-        f'difficulty setting."\n'
-        f"}}\n"
-        f"```\n"
-        f"- **Example of stalled progression:**\n"
-        f"```json\n"
-        f"{{\n"
-        f'  "feedback": "The storyline seems repetitive without introducing new elements, which may hinder narrative '
-        f'engagement."\n'
-        f"}}\n"
-        f"```\n"
-        f"- **Example of an immersion issue:**\n"
-        f"```json\n"
-        f"{{\n"
-        f'  "feedback": "The storyline includes modern dialogue that feels out of place in a medieval fantasy '
-        f'setting, which could disrupt immersion."\n'
-        f"}}\n"
-        f"```\n"
-    )
+    return f"""
+    Your task is to review the campaign storyline for alignment with the player's preferences, ensuring it is immersive, consistent, and engaging.
 
+    **Player Preferences and Character Details:**
+    {context}
 
-def validate_options_prompt(context, dm_prompt):
-    return (
-        f"Review the Game Master's response to ensure the provided options align with the player's abilities, "
-        f"character context, and the scene setting, in accordance with 5th Edition rules.\n\n"
-        f"**Player Preferences and Character Details:**\n{context}\n\n"
-        f"**DM's Response (Scene and Options):**\n{dm_prompt}\n\n"
-        f"**Instructions:**\n"
-        f"1. Confirm that each option aligns with the player's character abilities, class, and 5th Edition rules.\n"
-        f"2. Ensure options are appropriate and realistic within the context of the current scene (e.g., "
-        f"environmental details, character's current state).\n"
-        f"3. Identify any options that imply abilities or actions the player's character cannot perform or that would "
-        f"break immersion in the scene.\n"
-        f"4. **Only provide feedback if any options are inconsistent with the player's abilities, the game rules, "
-        f"or the scene context.**\n"
-        f"5. **If all options are appropriate and no changes are needed, set 'feedback' to an empty string.**\n\n"
-        f"**Response Format:**\n"
-        f"```json\n"
-        f"{{\n"
-        f'  "feedback": "<Your feedback here, or an empty string if no feedback is needed>"\n'
-        f"}}\n"
-        f"```\n\n"
-        f"**Examples of Responses:**\n"
-        f"- **Example when feedback is needed (invalid option due to class abilities):**\n"
-        f"```json\n"
-        f"{{\n"
-        f"  \"feedback\": \"The option to 'Cast Fireball' is not valid, as the player's character, a Level 1 Ranger, "
-        f'cannot cast Fireball."\n'
-        f"}}\n"
-        f"```\n"
-        f"- **Example when feedback is needed (option inconsistent with scene context):**\n"
-        f"```json\n"
-        f"{{\n"
-        f'  "feedback": "The option to \'Climb a tree to get a better view\' is inconsistent, as the scene describes '
-        f'the player being in a cave with no trees nearby."\n'
-        f"}}\n"
-        f"```\n"
-        f"- **Example when feedback is needed (immersion-breaking action):**\n"
-        f"```json\n"
-        f"{{\n"
-        f'  "feedback": "The option to \'Summon a magical helicopter\' is immersion-breaking and does not align with '
-        f'the medieval fantasy theme of the game."\n'
-        f"}}\n"
-        f"```\n"
-        f"- **Example when no feedback is needed (all options are appropriate):**\n"
-        f"```json\n"
-        f"{{\n"
-        f'  "feedback": ""\n'
-        f"}}\n"
-        f"```\n"
-    )
+    **Current Storyline:**
+    {storyline}
 
+    **Instructions:**
+    1. Verify that the storyline aligns with the player's preferences, including tone, theme, and difficulty, and that it remains consistent with previous context.
+    2. Confirm that the narrative is immersive and flows smoothly, with rich descriptions, appropriate pacing, and well-crafted scenes.
+    3. Ensure the GM’s response adheres to best practices for TTRPG storytelling, enhancing the player's experience.
+    4. Provide feedback only if you identify:
+        - **Misalignments** with player preferences (e.g., unwanted tone shifts, inconsistencies with established elements),
+        - **Narrative inconsistencies** or contradictions,
+        - **Elements hindering immersion** (e.g., lack of sensory detail, unclear descriptions, or abrupt transitions).
+    5. **Avoid suggesting major changes unless they are strictly necessary for consistency or player alignment.**
 
-def revise_options_prompt(context, dm_response, feedback):
-    return (
-        f"You are the Game Master (GM) revising your previous response based on feedback. Retain the structure and content "
-        f"of your original response, but make specific adjustments to address the feedback provided.\n\n"
-        f"**Player Preferences and Character Details:**\n{context}\n\n"
-        f"**Original GM Response (Scene and Options):**\n{dm_response}\n\n"
-        f"**Feedback to Address:**\n{feedback}\n\n"
-        f"**Instructions:**\n"
-        f"- Keep your original response as close to the original as possible.\n"
-        f"- Adjust the options only as needed to align with the character’s abilities, class, and the 5th Edition rules.\n"
-        f"- Ensure the options are consistent with the environmental context of the scene.\n"
-        f"- Maintain immersion by aligning actions with the game’s theme.\n"
-        f"- **Always respond in JSON format with the following structure:**\n\n"
-        f"```json\n"
-        f"{{\n"
-        f'  "dm_response": "<Your revised narrative response here>"\n'
-        f"}}\n"
-        f"```\n\n"
-        f"**Examples of Revised Responses:**\n"
-        f"- **Scene-Aligned Option Revision Example:**\n"
-        f"```json\n"
-        f"{{\n"
-        f'  "dm_response": "The cave grows darker as you approach the mysterious sound.\\n\\nOptions:\\n1. Approach '
-        f"the sound cautiously with your weapon drawn.\\n2. Use your ranger skills to analyze the sound from a safe "
-        f"distance.\\n3. Try to move silently closer, hoping to avoid detection.\\n4. Shout a warning into the "
-        f'darkness, hoping to elicit a response.\\n5. Retreat from the cave, opting for caution and safety."\n'
-        f"}}\n"
-        f"```\n"
-    )
+    6. **Response Format:**
+    ```json
+    {{
+        "feedback": "<Your feedback here, or empty string if no feedback is needed>"
+    }}
+    ```
 
-
-def inform_invalid_action_prompt(context, storyline, user_input):
-    return (
-        f"Provide feedback to the player about why their chosen action is invalid based on their abilities, class, "
-        f"or 5th Edition rules. Suggest alternative actions they could consider that are appropriate for their "
-        f"character.\n\n"
-        f"**Player Preferences and Character Details:**\n{context}\n\n"
-        f"**Storyline:**\n{storyline}\n\n"
-        f"**Player's Input (Chosen Action):**\n{user_input}\n\n"
-        f"**Instructions:**\n"
-        f"- Briefly explain why the chosen action is not possible due to the character's abilities or 5th Edition "
-        f"rules.\n"
-        f"- Offer three to five alternative actions the player could consider, suited to their abilities.\n"
-        f"- **Do not** consider the action's consistency with the scene or narrative context.\n"
-        f"- **Respond in JSON format with the following structure, using the key 'feedback':**\n\n"
-        f"```json\n"
-        f"{{\n"
-        f'  "feedback": "<Your explanation and suggested actions here>"\n'
-        f"}}\n"
-        f"```\n\n"
-        f"**Example of Response:**\n"
-        f"```json\n"
-        f"{{\n"
-        f'  "feedback": "As a Ranger, you cannot cast \'Fireball\' because it is not a spell available to your '
-        f"class. However, you can consider the following actions:\\n1. Use your bow to attack the enemy.\\n2. Cast a "
-        f"Ranger spell like 'Hunter's Mark' to enhance your combat abilities.\"\n"
-        f"}}\n"
-        f"```\n"
-    )
-
-
-def validate_player_action_prompt(context, dm_response, user_input):
-    return (
-        f"Your task is to evaluate the player's chosen action and determine whether it is valid based on "
-        f"their character's abilities, class, and 5th Edition rules.\n\n"
-        f"**Player Preferences and Character Details:**\n{context}\n\n"
-        f"**Current Conversation and Scene:**\n{dm_response}\n\n"
-        f"**Player's Input (Chosen Action):**\n{user_input}\n\n"
-        f"**Instructions:**\n"
-        f"1. Determine if the player's action is valid for their character's class and abilities under 5th Edition "
-        f"rules.\n"
-        f"2. Allow the player to have creative freedom provided they are in compliance with 5th edition rules.\n"
-        f"3. Allow the player to ask questions of the DM.\n"
-        f"4. If the action is **valid**, respond with JSON containing an empty string for feedback:\n"
-        f"   ```json\n"
-        f'   {{ "feedback": "" }}\n'
-        f"   ```\n"
-        f"5. If the action is **invalid** (e.g., the character attempts to use a spell or ability they do not have), "
-        f"respond with feedback explaining **why** the action is invalid and suggest a few alternative actions "
-        f"that are appropriate for their character.\n"
-        f"6. **Do not provide any additional text outside of the JSON response.**\n"
-        f"7. **Response Format:**\n"
-        f"   - **Valid Action Response:**\n"
-        f"     ```json\n"
-        f'     {{ "feedback": "" }}\n'
-        f"     ```\n"
-        f"   - **Invalid Action Response:**\n"
-        f"     ```json\n"
-        f"     {{\n"
-        f'       "feedback": "<Your feedback here>"\n'
-        f"     }}\n"
-        f"     ```\n\n"
-        f"**Example of Feedback for an Invalid Action:**\n"
-        f"```json\n"
-        f"{{\n"
-        f'  "feedback": "As a Ranger, you cannot cast the spell \'Fireball\' because it is not on your spell list. '
-        f"Consider using your bow to attack or casting a Ranger spell like 'Hunter's Mark' instead.\"\n"
-        f"}}\n"
-        f"```\n"
-    )
+    7. **Do not include any text outside of the JSON block. Only provide the JSON response. Do not include nested keys.**
+    """
 
 
 def revise_storyline_prompt(context, previous_response, feedback):
-    return (
-        f"You are the Game Master (GM) revising your previous response based on narrative feedback, ensuring the "
-        f"storyline aligns with the player's preferences and immersion is maintained.\n\n"
-        f"**Player Preferences and Character Details:**\n{context}\n\n"
-        f"**Previous Response:**\n{previous_response}\n\n"
-        f"**Feedback:**\n{feedback}\n\n"
-        f"**Instructions:**\n"
-        f"- Adjust your response to address the narrative feedback, revising any parts as necessary to fit the "
-        f"player's preferences.\n"
-        f"- Focus on enhancing immersion, continuity, and atmosphere in alignment with the player’s chosen theme and "
-        f"tone.\n"
-        f"- Maintain continuity with previous events and create a consistent, cohesive storyline.\n"
-        f"- Avoid altering actions or scenes unless specifically prompted by feedback; retain the player’s agency "
-        f"wherever possible.\n"
-        f"- **Always respond in JSON format with the following structure:**\n\n"
-        f"```json\n"
-        f"{{\n"
-        f'  "dm_response": "<Your revised narrative response here>"\n'
-        f"}}\n"
-        f"```\n"
-    )
+    return f"""
+    You are the Game Master (GM) revising your previous response based on feedback. Ensure the storyline aligns with the player's preferences and preserves immersion. 
+    **Your response should retain all elements of the previous response, with only minimal adjustments based on the feedback.**
+    
+    **Player Preferences and Character Details:**
+    {context}
+    
+    **Previous Response:**
+    {previous_response}
+    
+    **Feedback:**
+    {feedback}
+    
+    **Instructions:**
+    1. Retain the original description closely; make only small adjustments, such as adding details or shifting tone slightly.
+    2. Maintain all key elements from the previous response (e.g., objects, characters, atmosphere).
+    3. Enhance immersion by adding minor sensory details or descriptive elements if needed.
+    4. Avoid introducing new items, locations, or actions unless explicitly requested in the feedback.
+    5. **Respond in JSON format only, using the structure below:**
+    ```json
+    {{
+        "response": "<Your revised narrative response here>"
+    }}
+    ```
+    6. **Do not include any text outside of the JSON block. Only provide the JSON response. Do not include nested keys.**
+    """
+
+
+def validate_options_prompt(context, dm_prompt):
+    return f"""
+    Review the GM's response to ensure that all options provided align with the player's abilities, character details, and the current scene context.
+
+    **Player Preferences and Character Details:**
+    {context}
+
+    **GM's Response (Scene and Options):**
+    {dm_prompt}
+
+    **Instructions:**
+    1. Check that each option provided by the GM is realistic, consistent with the character's abilities, class, and standard 5th Edition rules.
+    2. Verify that the options align with the current scene and setting, enhancing immersion rather than disrupting it.
+    3. Identify any options that propose actions beyond the character’s capabilities or that could break immersion within the scene.
+    4. **Only provide feedback if inconsistencies are detected regarding abilities, rules, or scene context.** If everything aligns, set `"feedback"` to an empty string.
+
+    5. **Response Format:**
+        - Respond strictly with a JSON object containing only the `feedback` key, with no nested keys or additional fields.
+        - If feedback is necessary, provide it within the `feedback` field. If no feedback is needed, set `feedback` to an empty string (`""`).
+
+    6. **Required JSON Response Format (strict adherence):**
+    ```json
+    {{
+        "feedback": "<Your feedback here, or an empty string if no feedback is needed>"
+    }}
+    ```
+
+    7. **Important:**
+        - Your response must strictly match the format above, with only the `feedback` key in the JSON object. Do not include any extra text, explanations, or keys outside of the JSON block.
+        - Do not include nested keys.
+    """
+
+
+def revise_options_prompt(context, dm_response, feedback):
+    return f"""
+    You are the Game Master (GM) revising your previous response based on feedback. Retain the structure and content of your original response, but make specific adjustments to address the feedback provided.
+    
+    **Player Preferences and Character Details:**
+    {context}
+    
+    **Original GM Response (Scene and Options):**
+    {dm_response}
+    
+    **Feedback to Address:**
+    {feedback}
+    
+    **Instructions:**
+    1. Keep your original response as close to the original as possible.
+    2. Adjust the options only as needed to align with the character’s abilities, class, and the 5th Edition rules.
+    3. Ensure the options are consistent with the environmental context of the scene.
+    4. Maintain immersion by aligning actions with the game’s theme.
+    5. **Always respond in JSON format with the following structure:**
+    ```json
+    {{
+        "response": "<Your revised narrative response here>"
+    }}
+    ```
+    6. **Do not include any text outside of the JSON block. Only provide the JSON response. Do not include nested keys.**
+    """
+
+
+def inform_invalid_action_prompt(context, storyline, user_input):
+    return f"""
+    Provide feedback to the player about why their chosen action is invalid based on their abilities, class, or 5th Edition rules. Suggest alternative actions they could consider that are appropriate for their character.
+    
+    **Player Preferences and Character Details:**
+    {context}
+    
+    **Storyline:**
+    {storyline}
+    
+    **Player's Input (Chosen Action):**
+    {user_input}
+    
+    **Instructions:**
+    1. Briefly explain why the chosen action is not possible due to the character's abilities or 5th Edition rules.
+    2. Offer a few alternative actions the player could consider, suited to their abilities.
+    3. **Do not** consider the action's consistency with the scene or narrative context. Strictly evaluate its compliance with the rules.
+    4. **Respond in JSON format** with the following structure, using the key 'response' and no nested keys:
+    ```json
+    {{
+        "response": "<Your explanation and suggested actions here>"
+    }}
+    ```
+    5. **Do not include any text outside of the JSON block. Only provide the JSON response. Do not include nested keys.**
+    """
+
+
+def validate_player_action_prompt(context, dm_response, user_input):
+    return f"""
+    Your task is to evaluate the player's chosen action and determine whether it is valid based on their character's abilities, class, and 5th Edition rules.
+    
+    **Player Preferences and Character Details:**
+    {context}
+    
+    **Current Conversation and Scene:**
+    {dm_response}
+    
+    **Player's Input (Chosen Action):**
+    {user_input}
+    
+    **Instructions:**
+    1. Determine if the player's action is valid for their character's class and abilities under 5th Edition rules.
+    2. Allow the player to have creative freedom provided they are in compliance with 5th edition rules.
+    3. Allow the player to ask questions of the GM.
+    4. If the action is **valid**, respond with JSON containing an empty string for feedback:
+    ```json
+    {{
+        "feedback": ""
+    }}
+    ```
+    5. If the action is **invalid** (e.g., the character attempts to use a spell or ability they do not have), respond with feedback explaining **why** the action is invalid and suggest a few alternative actions that are appropriate for their character.
+    6. **Response Format:**
+    ```json
+    {{
+        "feedback": "<Your feedback here>"
+    }}
+    ```
+    7. **Do not include any text outside of the JSON block. Only provide the JSON response. Do not include nested keys.**
+    """
 
 
 def format_feedback_prompt(expected_keys, previous_response):
-    # Dynamically generate the JSON format example based on expected keys
-    json_example = ",\n".join([f'  "{key}": "value"' for key in expected_keys])
-
-    return (
-        f"Error: Your previous response had incorrect formatting.\n\n"
-        f"Your previous response was not delivered because it was in the wrong format.\n"
-        f"Do not apologize or include any extra text. Please correct and resend your previous response, ensuring it "
-        f"complies with the required JSON format.\n"
-        f"**Previous Response**: {previous_response}\n\n"
-        f"You must respond in JSON with the following keys:\n"
-        f"**Expected JSON Keys:**\n{expected_keys}\n\n"
-        f"**Required Format:**\n"
-        f"```json\n"
-        f"{{\n{json_example}\n}}\n"
-        f"```\n"
-        f"- **Do not include any text outside of the JSON block.**\n\n"
-        f"**Incorrect Format Example:**\n"
-        f"```\n"
-        f"Here is my response:\n\nThe player decides to explore the forest.\n```\n"
-        f"**Correct Format Examples:**\n"
-        f"```json\n"
-        f"{{\n"
-        f'  "dm_response": "<provide dm response here>"\n'
-        f"}}\n"
-        f"```\n"
-        f"or\n"
-        f"```json\n"
-        f"{{\n"
-        f'  "feedback": "<provide feedback here>"\n'
-        f"}}\n"
-        f"```\n"
+    # Generate JSON example with expected keys
+    json_example = ",\n    ".join(
+        [f'"{key}": "<value for {key}>"' for key in expected_keys]
     )
+
+    return f""" Your previous response was not delivered because it did not meet the required JSON format. **Do NOT 
+    change the content of your response**. Instead, adjust the formatting to strictly match the JSON requirements. This 
+    could include adding quotation marks where appropriate or ensuring you have the proper keys.
+
+    **Instructions:**
+    1. Ensure your response is in JSON format and includes only the following keys: {', '.join(expected_keys)}.
+    2. Each key must have a value, even if it is an empty string ("").
+    3. Do not include any text or explanations outside of the JSON block.
+    
+    **Previous Response:**  
+    {previous_response or "Your previous response was empty. Use the required key with an empty string as the value (in JSON)."}
+    **Required JSON Format:**
+    ```json
+    {{
+        {json_example}
+    }}
+    ```
+    **Correct Format Example:**
+    ```json
+    {{
+        \"{expected_keys[0]}\": \"<Your response here>\"
+    }}
+    ```
+    **Only provide the JSON response exactly as shown, with no extra text outside the JSON block. Do not include nested keys.**
+    """
