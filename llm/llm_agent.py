@@ -63,9 +63,9 @@ async def parse_response(agent_name: str, response: str) -> Optional[Dict[str, A
 
 
 async def send_feedback_and_retry(
-    agent, agent_name: str, expected_keys: List[str]
+    agent, agent_name: str, expected_keys: List[str], previous_response: str
 ) -> Optional[dict]:
-    feedback_msg_content = format_feedback_prompt(expected_keys)
+    feedback_msg_content = format_feedback_prompt(expected_keys, previous_response)
     feedback_msg = [{"content": feedback_msg_content, "role": "system"}]
 
     logger.debug(
@@ -122,6 +122,7 @@ async def get_agent_response(
         return None
 
     retries = 0
+    response = ""
     while retries < max_retries:
         try:
             logger.debug(
@@ -138,12 +139,19 @@ async def get_agent_response(
             parsed_response = await parse_response(agent_name, response)
             if not parsed_response or not isinstance(parsed_response, dict):
                 raise ValueError(f"Invalid response format from {agent_name}")
+
+            # Check for expected keys
             missing_keys = [key for key in expected_keys if key not in parsed_response]
             if missing_keys:
-                raise KeyError(
-                    f"Expected key(s) '{missing_keys}' missing in {agent_name}'s response"
+                # Log missing keys but continue with retry using the original response
+                logger.error(
+                    f"{Fore.RED}[KEY MISSING] Expected key(s) '{missing_keys}' missing in {agent_name}'s response."
+                    f"Proceeding to retry with original response for feedback.{Style.RESET_ALL}"
                 )
+                continue
+
             return parsed_response
+
         except (ValueError, KeyError) as e:
             logger.error(
                 f"{Fore.RED}[EXCEPTION] {str(e)} Error handling response from {Fore.BLUE}{agent_name} on attempt "
@@ -155,17 +163,26 @@ async def get_agent_response(
                 f"{e}{Style.RESET_ALL}"
             )
             logger.error(traceback.format_exc())
+
         retries += 1
         logger.debug(
             f"{Fore.MAGENTA}[RETRY] Sending feedback and attempting retry process.{Style.RESET_ALL}"
         )
-        extracted = await send_feedback_and_retry(agent, agent_name, expected_keys)
+
+        # Retry with feedback if keys are missing
+        extracted = await send_feedback_and_retry(
+            agent, agent_name, expected_keys, previous_response=response
+        )
         if extracted:
             return extracted
         else:
             logger.warning(
                 f"{Fore.YELLOW}[RETRY FAILED] Attempt {retries}/{max_retries} failed.{Style.RESET_ALL}"
             )
+
+    logger.warning(
+        f"{Fore.RED}[FINAL FAILURE] All retries exhausted. Returning None.{Style.RESET_ALL}"
+    )
     return None
 
 
@@ -295,9 +312,7 @@ async def generate_gm_response(
             )
 
             # 2. Validate storyline consistency
-            storyteller_prompt_content = validate_storyline_prompt(
-                context, dm_response_text
-            )
+            storyteller_prompt_content = validate_storyline_prompt(context, storyline)
             storyteller_msg = [{"content": storyteller_prompt_content, "role": "user"}]
             storyteller_response = await get_agent_response(
                 storyteller_agent, "StorytellerAgent", storyteller_msg, ["feedback"]
@@ -380,12 +395,7 @@ async def generate_gm_response(
             action_validation_msg = [
                 {"content": action_validation_prompt_content, "role": "user"}
             ]
-            storyteller_agent = agents.get("StorytellerAgent")
-            if not storyteller_agent:
-                return {
-                    "dm_response": "Error validating the player's action.",
-                    "full_storyline": storyline,
-                }
+
             action_feedback_response = await get_agent_response(
                 storyteller_agent,
                 "StorytellerAgent",
@@ -401,7 +411,7 @@ async def generate_gm_response(
             if action_feedback:
                 # 2. Inform the player if action is invalid
                 inform_feedback_prompt_content = inform_invalid_action_prompt(
-                    context, storyline, user_input, action_feedback
+                    context, storyline, user_input
                 )
                 inform_feedback_msg = [
                     {"content": inform_feedback_prompt_content, "role": "system"}
