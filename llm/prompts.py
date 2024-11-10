@@ -144,9 +144,12 @@ def validate_options_prompt(context, dm_prompt):
         f"**DM's Response (Scene and Options):**\n{dm_prompt}\n\n"
         f"**Instructions:**\n"
         f"1. Confirm that each option aligns with the player's character abilities, class, and 5th Edition rules.\n"
-        f"2. Ensure options are appropriate and realistic within the context of the current scene (e.g., environmental details, character's current state).\n"
-        f"3. Identify any options that imply abilities or actions the player's character cannot perform or that would break immersion in the scene.\n"
-        f"4. **Only provide feedback if any options are inconsistent with the player's abilities, the game rules, or the scene context.**\n"
+        f"2. Ensure options are appropriate and realistic within the context of the current scene (e.g., "
+        f"environmental details, character's current state).\n"
+        f"3. Identify any options that imply abilities or actions the player's character cannot perform or that would "
+        f"break immersion in the scene.\n"
+        f"4. **Only provide feedback if any options are inconsistent with the player's abilities, the game rules, "
+        f"or the scene context.**\n"
         f"5. **If all options are appropriate and no changes are needed, set 'feedback' to an empty string.**\n\n"
         f"**Response Format:**\n"
         f"```json\n"
@@ -158,19 +161,22 @@ def validate_options_prompt(context, dm_prompt):
         f"- **Example when feedback is needed (invalid option due to class abilities):**\n"
         f"```json\n"
         f"{{\n"
-        f'  "feedback": "The option to \'Cast Fireball\' is not valid, as the player\'s character, a Level 1 Ranger, cannot cast Fireball."\n'
+        f"  \"feedback\": \"The option to 'Cast Fireball' is not valid, as the player's character, a Level 1 Ranger, "
+        f'cannot cast Fireball."\n'
         f"}}\n"
         f"```\n"
         f"- **Example when feedback is needed (option inconsistent with scene context):**\n"
         f"```json\n"
         f"{{\n"
-        f'  "feedback": "The option to \'Climb a tree to get a better view\' is inconsistent, as the scene describes the player being in a cave with no trees nearby."\n'
+        f'  "feedback": "The option to \'Climb a tree to get a better view\' is inconsistent, as the scene describes '
+        f'the player being in a cave with no trees nearby."\n'
         f"}}\n"
         f"```\n"
         f"- **Example when feedback is needed (immersion-breaking action):**\n"
         f"```json\n"
         f"{{\n"
-        f'  "feedback": "The option to \'Summon a magical helicopter\' is immersion-breaking and does not align with the medieval fantasy theme of the game."\n'
+        f'  "feedback": "The option to \'Summon a magical helicopter\' is immersion-breaking and does not align with '
+        f'the medieval fantasy theme of the game."\n'
         f"}}\n"
         f"```\n"
         f"- **Example when no feedback is needed (all options are appropriate):**\n"
@@ -184,16 +190,16 @@ def validate_options_prompt(context, dm_prompt):
 
 def revise_options_prompt(context, dm_response, feedback):
     return (
-        f"You are the Game Master (GM) revising your previous response based on feedback. Ensure that all options "
-        f"are appropriate for the scene, align with the player’s abilities, and enhance immersion.\n\n"
+        f"You are the Game Master (GM) revising your previous response based on feedback. Retain the structure and content "
+        f"of your original response, but make specific adjustments to address the feedback provided.\n\n"
         f"**Player Preferences and Character Details:**\n{context}\n\n"
-        f"**Current DM's Response (Scene and Options):**\n{dm_response}\n\n"
-        f"**Feedback:**\n{feedback}\n\n"
+        f"**Original GM Response (Scene and Options):**\n{dm_response}\n\n"
+        f"**Feedback to Address:**\n{feedback}\n\n"
         f"**Instructions:**\n"
-        f"- Adjust the options to ensure they align with the character's abilities, class, and the 5th Edition "
-        f"rules.\n"
+        f"- Keep your original response as close to the original as possible.\n"
+        f"- Adjust the options only as needed to align with the character’s abilities, class, and the 5th Edition rules.\n"
         f"- Ensure the options are consistent with the environmental context of the scene.\n"
-        f"- Avoid breaking immersion with actions that do not fit the game’s theme.\n"
+        f"- Maintain immersion by aligning actions with the game’s theme.\n"
         f"- **Always respond in JSON format with the following structure:**\n\n"
         f"```json\n"
         f"{{\n"
@@ -213,15 +219,18 @@ def revise_options_prompt(context, dm_response, feedback):
     )
 
 
-def inform_invalid_action_prompt(context, dm_response, user_input):
+def inform_invalid_action_prompt(context, storyline, user_input):
     return (
-        f"Provide feedback to the player about why their chosen action is invalid based on their abilities, class, or 5th Edition rules. Suggest alternative actions they could consider that are appropriate for their character.\n\n"
+        f"Provide feedback to the player about why their chosen action is invalid based on their abilities, class, "
+        f"or 5th Edition rules. Suggest alternative actions they could consider that are appropriate for their "
+        f"character.\n\n"
         f"**Player Preferences and Character Details:**\n{context}\n\n"
-        f"**DM's Last Response:**\n{dm_response}\n\n"
+        f"**Storyline:**\n{storyline}\n\n"
         f"**Player's Input (Chosen Action):**\n{user_input}\n\n"
         f"**Instructions:**\n"
-        f"- Briefly explain why the chosen action is not possible due to the character's abilities or 5th Edition rules.\n"
-        f"- Offer two to three alternative actions the player could consider, suited to their abilities.\n"
+        f"- Briefly explain why the chosen action is not possible due to the character's abilities or 5th Edition "
+        f"rules.\n"
+        f"- Offer three to five alternative actions the player could consider, suited to their abilities.\n"
         f"- **Do not** consider the action's consistency with the scene or narrative context.\n"
         f"- **Respond in JSON format with the following structure, using the key 'feedback':**\n\n"
         f"```json\n"
@@ -232,7 +241,9 @@ def inform_invalid_action_prompt(context, dm_response, user_input):
         f"**Example of Response:**\n"
         f"```json\n"
         f"{{\n"
-        f"  \"feedback\": \"As a Ranger, you cannot cast 'Fireball' because it is not a spell available to your class. However, you can consider the following actions:\\n1. Use your bow to attack the enemy.\\n2. Cast a Ranger spell like 'Hunter's Mark' to enhance your combat abilities.\"\n"
+        f'  "feedback": "As a Ranger, you cannot cast \'Fireball\' because it is not a spell available to your '
+        f"class. However, you can consider the following actions:\\n1. Use your bow to attack the enemy.\\n2. Cast a "
+        f"Ranger spell like 'Hunter's Mark' to enhance your combat abilities.\"\n"
         f"}}\n"
         f"```\n"
     )
@@ -240,20 +251,28 @@ def inform_invalid_action_prompt(context, dm_response, user_input):
 
 def validate_player_action_prompt(context, dm_response, user_input):
     return (
-        f"Your task is to evaluate the player's chosen action and determine whether it is valid based **solely** on their character's abilities, class, and 5th Edition rules.\n\n"
+        f"Your task is to evaluate the player's chosen action and determine whether it is valid based on "
+        f"their character's abilities, class, and 5th Edition rules.\n\n"
         f"**Player Preferences and Character Details:**\n{context}\n\n"
-        f"**DM's Last Response:**\n{dm_response}\n\n"
+        f"**Current Conversation and Scene:**\n{dm_response}\n\n"
         f"**Player's Input (Chosen Action):**\n{user_input}\n\n"
         f"**Instructions:**\n"
-        f"1. Determine if the player's action is valid for their character's class and abilities under 5th Edition rules.\n"
-        f"2. **Do not** consider the action's consistency with the scene or narrative context.\n"
-        f"3. If the action is **valid**, respond with an empty JSON object: `{{}}`.\n"
-        f"4. If the action is **invalid** (e.g., the character attempts to use a spell or ability they do not have), respond with feedback explaining **why** the action is invalid and suggest one or two alternative actions that are appropriate for their character.\n"
-        f"5. **Do not provide any additional text outside of the JSON response.**\n"
-        f"6. **Response Format:**\n"
+        f"1. Determine if the player's action is valid for their character's class and abilities under 5th Edition "
+        f"rules.\n"
+        f"2. Allow the player to have creative freedom provided they are in compliance with 5th edition rules.\n"
+        f"3. Allow the player to ask questions of the DM.\n"
+        f"4. If the action is **valid**, respond with JSON containing an empty string for feedback:\n"
+        f"   ```json\n"
+        f'   {{ "feedback": "" }}\n'
+        f"   ```\n"
+        f"5. If the action is **invalid** (e.g., the character attempts to use a spell or ability they do not have), "
+        f"respond with feedback explaining **why** the action is invalid and suggest a few alternative actions "
+        f"that are appropriate for their character.\n"
+        f"6. **Do not provide any additional text outside of the JSON response.**\n"
+        f"7. **Response Format:**\n"
         f"   - **Valid Action Response:**\n"
         f"     ```json\n"
-        f"     {{}}\n"
+        f'     {{ "feedback": "" }}\n'
         f"     ```\n"
         f"   - **Invalid Action Response:**\n"
         f"     ```json\n"
@@ -264,21 +283,22 @@ def validate_player_action_prompt(context, dm_response, user_input):
         f"**Example of Feedback for an Invalid Action:**\n"
         f"```json\n"
         f"{{\n"
-        f"  \"feedback\": \"As a Ranger, you cannot cast the spell 'Fireball' because it is not on your spell list. Consider using your bow to attack or casting a Ranger spell like 'Hunter's Mark' instead.\"\n"
+        f'  "feedback": "As a Ranger, you cannot cast the spell \'Fireball\' because it is not on your spell list. '
+        f"Consider using your bow to attack or casting a Ranger spell like 'Hunter's Mark' instead.\"\n"
         f"}}\n"
         f"```\n"
     )
 
 
-def revise_storyline_prompt(context, storyline, feedback):
+def revise_storyline_prompt(context, previous_response, feedback):
     return (
         f"You are the Game Master (GM) revising your previous response based on narrative feedback, ensuring the "
         f"storyline aligns with the player's preferences and immersion is maintained.\n\n"
         f"**Player Preferences and Character Details:**\n{context}\n\n"
-        f"**Current Storyline:**\n{storyline}\n\n"
+        f"**Previous Response:**\n{previous_response}\n\n"
         f"**Feedback:**\n{feedback}\n\n"
         f"**Instructions:**\n"
-        f"- Adjust the storyline to address the narrative feedback, revising any parts as necessary to fit the "
+        f"- Adjust your response to address the narrative feedback, revising any parts as necessary to fit the "
         f"player's preferences.\n"
         f"- Focus on enhancing immersion, continuity, and atmosphere in alignment with the player’s chosen theme and "
         f"tone.\n"
@@ -290,40 +310,20 @@ def revise_storyline_prompt(context, storyline, feedback):
         f"{{\n"
         f'  "dm_response": "<Your revised narrative response here>"\n'
         f"}}\n"
-        f"```\n\n"
-        f"**Examples of Revised Responses:**\n"
-        f"- **Narrative Adjustment Example:**\n"
-        f"```json\n"
-        f"{{\n"
-        f'  "dm_response": "You take a deep breath and focus your senses, drawing upon your soldier training. The '
-        f"eerie whispers of the forest intensify, but this time, you notice patterns in the sounds—signals used by "
-        f"goblin scouts. Realizing you're being watched, you swiftly devise a plan.\\n\\nOptions:\\n1. Set a trap "
-        f"using your surroundings to ambush the goblins.\\n2. Signal your allies to prepare for an imminent "
-        f"attack.\\n3. Attempt to communicate with the goblins, hoping to negotiate.\\n4. Use stealth to quietly "
-        f'relocate and observe the goblins unnoticed.\\n5. Mimic the goblin signals to confuse and mislead them."\n'
-        f"}}\n"
-        f"```\n"
-        f"- **Scene Adjustment Example (when the scene is misaligned with preferences):**\n"
-        f"```json\n"
-        f"{{\n"
-        f'  "dm_response": "The wind howls as you emerge into the forest clearing. You pause, feeling the eerie quiet '
-        f"around you, only to spot the faint glow of torchlight in the distance.\\n\\nOptions:\\n1. Approach the "
-        f"light with caution.\\n2. Scout the area for any hidden threats.\\n3. Attempt to remain unseen and move "
-        f'closer to observe.\\n4. Ready your weapon and move in for a potential confrontation."\n'
-        f"}}\n"
         f"```\n"
     )
 
 
-def format_feedback_prompt(expected_keys):
+def format_feedback_prompt(expected_keys, previous_response):
     # Dynamically generate the JSON format example based on expected keys
     json_example = ",\n".join([f'  "{key}": "value"' for key in expected_keys])
 
     return (
-        f"Error: The last response had incorrect formatting.\n\n"
-        f"Your response was not delivered because it was in the wrong format.\n"
-        f"Do not apologize or include any extra text. Please resend your previous response, ensuring it complies with "
-        f"the required JSON format.\n"
+        f"Error: Your previous response had incorrect formatting.\n\n"
+        f"Your previous response was not delivered because it was in the wrong format.\n"
+        f"Do not apologize or include any extra text. Please correct and resend your previous response, ensuring it "
+        f"complies with the required JSON format.\n"
+        f"**Previous Response**: {previous_response}\n\n"
         f"You must respond in JSON with the following keys:\n"
         f"**Expected JSON Keys:**\n{expected_keys}\n\n"
         f"**Required Format:**\n"
