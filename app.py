@@ -658,6 +658,7 @@ async def post_llm_config(request: Request):
             "mistral:latest",
             "llama3.2:latest",
             "llama3.1:latest",
+            "llama3.1:70b",
         ],
     }
 
