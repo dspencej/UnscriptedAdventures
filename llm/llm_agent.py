@@ -126,7 +126,7 @@ async def get_agent_response(
         try:
             attempt_number = retries + 1
             logger.info(
-                f"{Fore.GREEN}[ATTEMPT {attempt_number}/{max_retries}] Sending message to {Fore.BLUE}{agent_name}{Style.RESET_ALL}\n"
+                f"{Fore.GREEN}[ATTEMPT {attempt_number}/{max_retries}] Sending message to {agent_name}{Style.RESET_ALL}\n"
             )
             logger.debug(f"{Fore.BLUE}{msg}{Style.RESET_ALL}\n")
 
@@ -287,12 +287,8 @@ async def generate_gm_response(
                 for pair in conversation_pairs
             ]
         )
-        logger.info(
-            f"{Fore.GREEN}[RECONSTRUCTING STORYLINE] {Style.RESET_ALL}\n"
-        )
-        logger.debug(
-            f"{Fore.BLUE}Full storyline: {storyline}{Style.RESET_ALL}\n"
-        )
+        logger.info(f"{Fore.GREEN}[RECONSTRUCTING STORYLINE] {Style.RESET_ALL}\n")
+        logger.debug(f"{Fore.BLUE}Full storyline: {storyline}{Style.RESET_ALL}\n")
 
         dm_agent = agents.get("DMAgent")
         if not dm_agent:

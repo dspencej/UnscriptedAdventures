@@ -270,28 +270,30 @@ def format_feedback_prompt(expected_keys, previous_response):
         [f'"{key}": "<value for {key}>"' for key in expected_keys]
     )
 
-    return f""" Your previous response was not delivered because it did not meet the required JSON format. **Do NOT 
-    change the content of your response**. Instead, adjust the formatting to strictly match the JSON requirements. This 
-    could include adding quotation marks where appropriate or ensuring you have the proper keys.
+    return f"""Your previous response was not delivered because it did not meet the required JSON format. 
+    **Do NOT change the content of your response**. Only adjust the formatting to match the JSON structure below.
 
     **Instructions:**
-    1. Ensure your response is in JSON format and includes only the following keys: {', '.join(expected_keys)}.
+    1. Format your response in JSON, using only the keys: {', '.join(expected_keys)}.
     2. Each key must have a value, even if it is an empty string ("").
-    3. Do not include any text or explanations outside of the JSON block.
-    
+    3. Provide ONLY the JSON block; do not add any text or explanations outside it.
+
     **Previous Response:**  
     {previous_response or "Your previous response was empty. Use the required key with an empty string as the value (in JSON)."}
+
     **Required JSON Format:**
     ```json
     {{
         {json_example}
     }}
     ```
+
     **Correct Format Example:**
     ```json
     {{
-        \"{expected_keys[0]}\": \"<Your response here>\"
+        "{expected_keys[0]}": "<Your response here>"
     }}
     ```
-    **Only provide the JSON response exactly as shown, with no extra text outside the JSON block. Do not include nested keys.**
+
+    **Follow this exact JSON format without adding extra text or nested keys.**
     """
