@@ -83,7 +83,7 @@ def create_ragproxyagent(agent_type: str) -> RetrieveUserProxyAgent:
 
 def create_dm_agent(llm_config: Dict[str, Any]) -> ConversableAgent:
     """
-    Factory function to create a Dungeon Master (DM) ConversableAgent.
+    Factory function to create a Game Master (GM) ConversableAgent.
 
     :param llm_config: Configuration dictionary for the LLM
     :return: Configured ConversableAgent instance for DM
@@ -92,7 +92,8 @@ def create_dm_agent(llm_config: Dict[str, Any]) -> ConversableAgent:
     dm_agent = ConversableAgent(
         name="DMAgent",
         system_message=(
-            "You are the Dungeon Master (DM) in a Dungeons & Dragons 5th Edition campaign, guiding a single player "
+            "You are the Game Master (GM) in a campaign for the world's Most Popular role playing game (5th Edition), "
+            "guiding a single player"
             "through an immersive and engaging storytelling experience."
             "Your responsibilities include creating consistent, coherent narratives that align with the player's "
             "preferences and the previous storyline."
@@ -121,7 +122,7 @@ def create_storyteller_agent(llm_config: Dict[str, Any]) -> ConversableAgent:
     storyteller_agent = ConversableAgent(
         name="StorytellerAgent",
         system_message=(
-            "You are a Storytelling Expert for a Dungeons & Dragons 5th Edition campaign. "
+            "You are a Storytelling Expert for a campaign in the world's Most Popular role playing game (5th Edition)"
             "Your role is to objectively evaluate the campaign storyline, ensuring it aligns with the player's "
             "preferences and maintains consistency with previous events."
             "Provide constructive feedback on narrative structure, character development, plot consistency, "
