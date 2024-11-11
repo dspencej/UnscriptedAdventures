@@ -21,7 +21,7 @@ def create_campaign_prompt(user_input, context):
         - **Dialogue choices** for conversations with NPCs.
         - **Skill checks** (e.g., perception, insight, investigation) to build tension or reveal hidden details.
         - **Open-ended exploration** for player freedom.
-    3. Avoid enforcing a specific path; instead, introduce **narrative hooks or small mysteries** to encourage curiosity.
+    3. Drive the narrative forward at a good, reasonable pace - not too quick or too slow.
     4. Maintain continuity with previous player actions to build a cohesive storyline, weaving in prior events.
     5. Use **5E mechanics** as a basis for responses.
     6. **JSON Response Format Requirement**:
@@ -70,7 +70,7 @@ def continue_campaign_prompt(context, previous_storyline, user_input):
         - Add **narrative hooks** to provide options without forcing a specific path.
         - Include **foreshadowing** to build suspense or intrigue.
         - Balance intense moments with **rest or discovery** opportunities.
-    4. Avoid introducing new items or abilities unless requested by the player.
+    4. Drive the narrative forward at a good, reasonable pace - not too quick or too slow.
     5. Do NOT reveal GM-only information, such as DCs or hidden mechanics.
     6. Assume the player knows their character's basic information, so avoid repeating it.
 
