@@ -12,37 +12,40 @@ def create_campaign_prompt(user_input, context):
     {user_input}
 
     **Instructions:**
-    1. Begin with a **rich, vivid scene description** to set the tone and atmosphere. Describe multiple sensory details, focusing on:
+    1. Begin with a **rich, vivid scene description** to set the tone and atmosphere. Include sensory details such as:
         - **Visual elements** (colors, textures, movement)
         - **Sounds** (background noises, specific auditory cues)
         - **Scents** (environmental smells, noticeable aromas)
         - **Textures or sensations** (ambient temperature, weather, tactile elements)
-    2. Integrate potential **interaction types** within the scene, such as:
+    2. Provide potential **interaction options** within the scene, such as:
         - **Dialogue choices** for conversations with NPCs.
         - **Skill checks** (e.g., perception, insight, investigation) to build tension or reveal hidden details.
-        - **Open-ended exploration** to allow freedom in player actions.
-    3. Use sensory details to create a layered environment, drawing the player’s attention to specific details that suggest deeper mysteries or potential paths of action.
-    4. Introduce **narrative hooks or small mysteries** that encourage curiosity and exploration without enforcing a specific direction.
-    5. Maintain continuity with previous player actions to build a cohesive storyline, weaving in prior events where appropriate.
-    6. Provide a sense of purpose and subtle direction, offering multiple choices for how the player might proceed.
-    7. Ensure all responses align with **5E mechanics**.
-    8. Avoid giving the player information intended for the GM only, such as DCs or hidden mechanics.
-    9. Assume the player is already aware of their character's status, race, and class, so avoid repeating this information.
-    10. **Only respond in JSON format, using the structure below:**
+        - **Open-ended exploration** for player freedom.
+    3. Avoid enforcing a specific path; instead, introduce **narrative hooks or small mysteries** to encourage curiosity.
+    4. Maintain continuity with previous player actions to build a cohesive storyline, weaving in prior events.
+    5. Use **5E mechanics** as a basis for responses.
+    6. **JSON Response Format Requirement**:
+        - Only respond in JSON format.
+        - Use the format below, with no extra keys or explanations:
 
     ```json
     {{
-        "response": "<Narrative response here as a single string, incorporating rich sensory details, layered interactions, and enticing narrative elements>"
+        "response": "<Narrative response as a single string. Ensure nested dialogue is enclosed in single quotes, e.g., 'He said, Hello!' Do not include line breaks or extra whitespace inside this field.>"
     }}
     ```
 
-    11. **No additional text outside the JSON block. Only provide the JSON response. Do not include nested keys.**
+    **Correct Example:**
+    ```json
+    {{
+        "response": "The town square bustles with activity as vendors shout their wares. A guard eyes you warily and says, 'Greetings, traveler. What brings you here?'"
+    }}
+    ```
     """
 
 
 def continue_campaign_prompt(context, previous_storyline, user_input):
     return f"""
-    You are the Game Master (GM) for an ongoing campaign in a role-playing game. Continue the story based on the player's input and maintain consistency with their preferences and established storyline.
+    You are the Game Master (GM) for an ongoing campaign in a role-playing game. Continue the story based on the player's input while maintaining consistency with their preferences and established storyline.
 
     **Player Preferences and Character Details:**
     {context}
@@ -54,35 +57,43 @@ def continue_campaign_prompt(context, previous_storyline, user_input):
     {user_input}
 
     **Instructions:**
-    1. Begin with an **immersive scene description** that aligns with the established setting. Include:
-        - **Vivid sensory details** (sights, sounds, textures, and scents).
-        - **Atmospheric elements** that create tension or suspense.
-    2. Present a mix of interaction types, incorporating:
-        - **Dialogue choices** for NPC interactions, allowing varied responses.
-        - **Skill challenges** (e.g., stealth, perception, insight) to add layers of tension.
-        - **Open-ended exploration** to encourage the player’s freedom in decision-making.
-        - **Do NOT limit to these examples only.**
-    3. Adhere to classic D&D storytelling structure:
-        - Introduce **clear narrative hooks** to present options for player actions without dictating a specific direction.
-        - Use **foreshadowing or dramatic reveals** as appropriate to build anticipation and deepen the storyline.
-        - Include **moments for rest, reflection, or discovery** to provide narrative balance after intense encounters.
-    4. Avoid adding new items, abilities, or settings unless directly prompted by the player’s input.
-    5. Focus on enhancing the scene’s existing elements through detail and depth rather than altering them.
-    6. Do NOT reveal GM-only information to the player, such as DCs or hidden story mechanics.
-    7. Assume the player already knows their character’s current status, race, and class, so avoid repeating this information.
-    8. **Respond in JSON format only:**
+    1. Start with a **detailed, immersive scene description**. Include sensory details that align with the established setting:
+        - **Visuals** (colors, textures, movement).
+        - **Sounds** (ambient noises, specific auditory cues).
+        - **Scents** (aromas or environmental smells).
+        - **Textures or sensations** (weather, tactile elements).
+    2. Offer **interaction options** within the scene:
+        - **Dialogue choices** for conversations with NPCs.
+        - **Skill challenges** (e.g., stealth, perception) to create tension.
+        - **Exploration opportunities** to allow player freedom.
+    3. Follow storytelling conventions:
+        - Add **narrative hooks** to provide options without forcing a specific path.
+        - Include **foreshadowing** to build suspense or intrigue.
+        - Balance intense moments with **rest or discovery** opportunities.
+    4. Avoid introducing new items or abilities unless requested by the player.
+    5. Do NOT reveal GM-only information, such as DCs or hidden mechanics.
+    6. Assume the player knows their character's basic information, so avoid repeating it.
+
+    **JSON Response Requirement**:
+    - **Respond ONLY in JSON format** using the structure below.
+    - Follow this exact format to ensure proper JSON parsing:
 
     ```json
     {{
-        "response": "<Your narrative response here as a single string, incorporating sensory detail, interaction options, and storyline continuity>"
+        "response": "<Your narrative response here as a single string. Include sensory details, interaction options, and maintain storyline continuity. Use single quotes for nested dialogue (e.g., 'He said, Hello!'). Do not include line breaks or extra whitespace within this field.>"
     }}
     ```
 
-    9. **Do not include any text outside of the JSON block. Only provide the JSON response. Do not include nested keys.**
+    **Correct JSON Example:**
+    ```json
+    {{
+        "response": "As you step into the shadowy forest, the crunch of leaves underfoot echoes around you. A hooded figure steps forward and says, 'Greetings, traveler. What brings you to these woods?'"
+    }}
+    ```
     """
 
 
-def validate_storyline_prompt(context, storyline):
+def validate_storyline_prompt(context, storyline, dm_response):
     return f"""
     Your task is to review the campaign storyline for alignment with the player's preferences, ensuring it is immersive, consistent, and engaging.
 
@@ -91,6 +102,9 @@ def validate_storyline_prompt(context, storyline):
 
     **Current Storyline:**
     {storyline}
+    
+    **New GM Response:**
+    {dm_response}
 
     **Instructions:**
     1. Verify that the storyline aligns with the player's preferences, including tone, theme, and difficulty, and that it remains consistent with previous context.
@@ -113,13 +127,16 @@ def validate_storyline_prompt(context, storyline):
     """
 
 
-def revise_storyline_prompt(context, previous_response, feedback):
+def revise_storyline_prompt(context, storyline, previous_response, feedback):
     return f"""
     You are the Game Master (GM) revising your previous response based on feedback. Ensure the storyline aligns with the player's preferences and preserves immersion. 
     **Your response should retain all elements of the previous response, with only minimal adjustments based on the feedback.**
     
     **Player Preferences and Character Details:**
     {context}
+    
+    **Current Storyline:**
+    {storyline}
     
     **Previous Response:**
     {previous_response}
@@ -182,15 +199,15 @@ def revise_options_prompt(context, dm_response, feedback):
     **Player Preferences and Character Details:**
     {context}
     
-    **Original GM Response (Scene and Options):**
+    **Original GM Response:**
     {dm_response}
     
     **Feedback to Address:**
     {feedback}
     
     **Instructions:**
-    1. Keep your original response as close to the original as possible.
-    2. Adjust the options only as needed to align with the character’s abilities, class, and the 5th Edition rules.
+    1. Keep your response as close to the original as possible.
+    2. Adjust the options only as needed to incorporate the feedback.
     3. Ensure the options are consistent with the environmental context of the scene.
     4. Maintain immersion by aligning actions with the game’s theme.
     5. **Always respond in JSON format with the following structure:**
@@ -265,24 +282,27 @@ def validate_player_action_prompt(context, dm_response, user_input):
 
 
 def format_feedback_prompt(expected_keys, previous_response):
-    # Generate JSON example with expected keys
-    json_example = ",\n    ".join(
-        [f'"{key}": "<value for {key}>"' for key in expected_keys]
+    # Generate JSON example with all expected keys
+    json_example = ",\n        ".join(
+        [
+            f'"{key}": "<original response without nested quotation marks>"'
+            for key in expected_keys
+        ]
     )
 
     return f"""Your previous response did not meet the correct JSON format.
 
-    **Do NOT add any extra layers or additional JSON blocks. The response should be structured exactly as shown below. Only adjust the formatting.**
+    **Original GM Response:**
+    {previous_response}
 
     **Instructions:**
-    - Use exactly the keys: {', '.join(expected_keys)}.
-    - Every key must have a value, even if it’s an empty string ("").
-    - Return only the JSON block, without additional layers, explanations, or new JSON keys.
-
-    **Previous Response (keep this exact content but structure it as shown):**
-    ```
-    {previous_response}
-    ```
+    1. Keep your response as close to the original as possible while correcting for proper JSON encoding.
+    2. Use exactly these keys: **{', '.join(expected_keys)}**.
+    3. **Each key must have a value**, even if it’s an empty string ("").
+    4. **The value must be a single string**: avoid line breaks, use single quotes for nested dialogue (e.g., 'He said, Hello!'), and ensure no extra whitespace.
+    5. **Escape special characters properly**, including double quotes (\"), backslashes (\\), and newlines (\\n).
+    6. **Return only the JSON block** with the specified keys. Do not add explanations, additional keys, or any text outside the JSON block.
+    7. **Respond using the exact JSON format below**:
 
     **Required JSON Format:**
     ```json
@@ -291,10 +311,10 @@ def format_feedback_prompt(expected_keys, previous_response):
     }}
     ```
 
-    **Example JSON Format (using your exact content):**
+    **Correct JSON Example**:
     ```json
     {{
-        "{expected_keys[0]}": "{previous_response.replace('"', '\\"') if previous_response else ''}"
+        {", ".join([f'"{key}": "The guard eyes you warily and says, \'Greetings, traveler.\'"' for key in expected_keys])}
     }}
     ```
     """

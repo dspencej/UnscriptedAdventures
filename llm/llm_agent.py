@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 # Constants
-MAX_RETRIES = 6
+MAX_RETRIES = 3
 
 # Import ORM models and database utilities
 from sqlalchemy.orm import Session  # noqa: E402
@@ -129,7 +129,7 @@ async def get_agent_response(
         try:
             attempt_number = retries + 1
             logger.info(
-                f"{Fore.GREEN}[ATTEMPT {attempt_number}/{max_retries}] Sending message to {agent_name}{Style.RESET_ALL}\n"
+                f"{Fore.MAGENTA}[ATTEMPT {attempt_number}/{max_retries}] Sending message to {agent_name}{Style.RESET_ALL}\n"
             )
             logger.debug(f"{Fore.BLUE}{msg}{Style.RESET_ALL}\n")
 
@@ -160,7 +160,7 @@ async def get_agent_response(
 
                 # Log each feedback attempt to confirm retry mechanism
                 logger.debug(
-                    f"{Fore.YELLOW}[FEEDBACK RETRY] Feedback attempt {attempt_number}/{max_retries} - Parsed response: {parsed_response}{Style.RESET_ALL}"
+                    f"{Fore.YELLOW}[FEEDBACK RETRY] Feedback attempt {attempt_number}/{max_retries} - Parsed response: {parsed_response}\n{Style.RESET_ALL}"
                 )
 
                 # If feedback response has the required keys, return it
@@ -239,105 +239,35 @@ def build_conversation_context(
         ]
     )
 
-    # Add alignment if available
-    alignment = current_character.get("alignment", "Unknown")
-
-    # Ensure background is a dictionary; handle case where it's a string or missing
-    background = current_character.get("background", {})
-    if isinstance(background, str):
-        background_text = f"Background: {background}"
-    else:
-        background_text = (
-            f"Name: {background.get('name', 'Unknown')}\n"
-            f"Feature: {background.get('feature', 'None')}\n"
-            f"Personality Traits: {', '.join(background.get('personality_traits', []))}\n"
-            f"Ideals: {', '.join(background.get('ideals', []))}\n"
-            f"Bonds: {', '.join(background.get('bonds', []))}\n"
-            f"Flaws: {', '.join(background.get('flaws', []))}"
-        )
-
-    # Add skills and proficiencies if available
-    skills = current_character.get("skills", [])
-    skills_text = (
-        "\n".join([f"  - {skill.name} ({skill.ability})" for skill in skills])
-        if skills
-        else "None"
-    )
-
-    proficiencies = current_character.get("proficiencies", [])
-    proficiencies_text = (
-        "\n".join([f"  - {prof.name} ({prof.type})" for prof in proficiencies])
-        if proficiencies
-        else "None"
-    )
-
-    # Add languages if available
-    languages = current_character.get("languages", [])
-    languages_text = (
-        ", ".join([language.name for language in languages]) if languages else "None"
-    )
-
-    # Add feats if available
-    feats = current_character.get("feats", [])
-    feats_text = (
-        "\n".join([f"  - {feat.name}: {feat.description}" for feat in feats])
-        if feats
-        else "None"
-    )
-
-    # Add features if available
-    features = current_character.get("features", [])
-    features_text = (
-        "\n".join(
-            [f"  - {feature.name}: {feature.description}" for feature in features]
-        )
-        if features
-        else "None"
-    )
-
     return f"""User Preferences:
-{preferences_text}
-
-Character Core Details:
-{character_core_details}
-
-Alignment:
-{alignment}
-
-Background:
-{background_text}
-
-Skills:
-{skills_text}
-
-Proficiencies:
-{proficiencies_text}
-
-Languages:
-{languages_text}
-
-Feats:
-{feats_text}
-
-Features:
-{features_text}
-"""
+    {preferences_text}
+    
+    Character Core Details:
+    {character_core_details}
+    
+    """
 
 
 async def handle_storyline_feedback(
     dm_msg: List[Dict[str, str]], agent, agent_name: str, max_retries: int = MAX_RETRIES
 ) -> Optional[Dict[str, Any]]:
+    logger.info(f"{Fore.GREEN}[HANDLING STORYLINE FEEDBACK]\n{Style.RESET_ALL}")
     retries = 0
     while retries < max_retries:
-        logger.debug(
-            f"{Fore.MAGENTA}[ATTEMPT {retries + 1}/{max_retries}] Handling storyline feedback.{Style.RESET_ALL}"
+        logger.info(
+            f"{Fore.MAGENTA}[ATTEMPT {retries + 1}/{max_retries}]\n{Style.RESET_ALL}"
         )
+        logger.debug(f"{Fore.BLUE}MSG: {dm_msg}\n{Style.RESET_ALL}")
         revised_response = await get_agent_response(
             agent, agent_name, dm_msg, ["response"]
         )
+        logger.debug(f"{Fore.BLUE}Response: {revised_response}\n{Style.RESET_ALL}")
         if revised_response and isinstance(revised_response, dict):
             dm_response_text = revised_response.get("response")
             if dm_response_text:
+                logger.debug(
+                    f"{Fore.BLUE}Returning: {revised_response}\n{Style.RESET_ALL}"
+                )
                 return revised_response
         retries += 1
     return None
@@ -345,32 +275,45 @@ async def handle_storyline_feedback(
 
 # Helper function to generate initial DM response and handle feedback
 async def generate_initial_campaign_response(user_input, context, dm_agent):
+    logger.info(f"{Fore.GREEN}[CREATING CAMPAIGN]\n{Style.RESET_ALL}")
     dm_prompt_content = create_campaign_prompt(user_input, context)
     dm_msg = [{"content": dm_prompt_content, "role": "user"}]
+    logger.debug(f"{Fore.BLUE}MSG: {dm_msg}\n{Style.RESET_ALL}")
     dm_response = await get_agent_response(dm_agent, DMAgent, dm_msg, ["response"])
-    return dm_response.get("response", "") if isinstance(dm_response, dict) else ""
+    response = dm_response.get("response", "") if isinstance(dm_response, dict) else ""
+    logger.debug(f"{Fore.BLUE}Response: {response}\n{Style.RESET_ALL}")
+    return response
 
 
 # Helper function for continuing an existing campaign
 async def continue_campaign_response(user_input, context, storyline, dm_agent):
+    logger.info(f"{Fore.GREEN}[CONTINUE CAMPAIGN RESPONSE]\n{Style.RESET_ALL}")
     dm_continue_prompt_content = continue_campaign_prompt(
         context, storyline, user_input
     )
     dm_continue_msg = [{"content": dm_continue_prompt_content, "role": "user"}]
+    logger.debug(f"{Fore.BLUE}MSG: {dm_continue_msg}\n{Style.RESET_ALL}")
     dm_response = await get_agent_response(
         dm_agent, DMAgent, dm_continue_msg, ["response"]
     )
-    return dm_response.get("response", "") if isinstance(dm_response, dict) else ""
+    response = dm_response.get("response", "") if isinstance(dm_response, dict) else ""
+    logger.debug(f"{Fore.BLUE}Response: {response}\n{Style.RESET_ALL}")
+    return response
 
 
 # Helper function to validate and revise storyline
 async def validate_and_revise_storyline(
     context, storyline, dm_response_text, storyteller_agent, dm_agent
 ):
-    prompt_content = validate_storyline_prompt(context, storyline)
+    logger.info(f"{Fore.GREEN}[VALIDATE AND REVISE STORYLINE]\n{Style.RESET_ALL}")
+    prompt_content = validate_storyline_prompt(context, storyline, dm_response_text)
     msg = [{"content": prompt_content, "role": "user"}]
+    logger.debug(f"{Fore.BLUE}MSG: {msg}\n{Style.RESET_ALL}")
     feedback_response = await get_agent_response(
         storyteller_agent, StorytellerAgent, msg, ["feedback"]
+    )
+    logger.debug(
+        f"{Fore.BLUE}Feedback Response: {feedback_response}\n{Style.RESET_ALL}"
     )
     feedback = (
         feedback_response.get("feedback", "")
@@ -379,19 +322,27 @@ async def validate_and_revise_storyline(
     )
 
     if feedback:
+        logger.info(f"{Fore.GREEN}[REVISING STORYLINE]\n{Style.RESET_ALL}")
         revise_prompt_content = revise_storyline_prompt(
-            context, dm_response_text, feedback
+            context, storyline, dm_response_text, feedback
         )
         revise_msg = [{"content": revise_prompt_content, "role": "user"}]
+        logger.debug(f"{Fore.BLUE}MSG: {revise_msg}\n{Style.RESET_ALL}")
         revised_response = await get_agent_response(
             dm_agent, DMAgent, revise_msg, ["response"]
         )
-        return (
+        logger.debug(
+            f"{Fore.BLUE}Revised Response: {revised_response}\n{Style.RESET_ALL}"
+        )
+        response = (
             revised_response.get("response", "")
             if isinstance(revised_response, dict)
             else dm_response_text
         )
-
+        logger.debug(f"{Fore.BLUE}Response: {response}\n{Style.RESET_ALL}")
+        return response
+    logger.info(f"{Fore.GREEN}[NO REVISION NEEDED]\n{Style.RESET_ALL}")
+    logger.debug(f"{Fore.BLUE}Response: {dm_response_text}\n{Style.RESET_ALL}")
     return dm_response_text
 
 
@@ -399,11 +350,17 @@ async def validate_and_revise_storyline(
 async def validate_and_revise_options(
     context, dm_response_text, storyteller_agent, dm_agent
 ):
+    logger.info(f"{Fore.GREEN}[VALIDATE AND REVISE OPTIONS]\n{Style.RESET_ALL}")
     options_prompt_content = validate_options_prompt(context, dm_response_text)
     options_msg = [{"content": options_prompt_content, "role": "user"}]
+    logger.debug(f"{Fore.BLUE}MSG: {options_msg}\n{Style.RESET_ALL}")
+    logger.debug(
+        f"{Fore.YELLOW}DM Response Text: {dm_response_text}\n{Style.RESET_ALL}"
+    )
     options_feedback_response = await get_agent_response(
         storyteller_agent, StorytellerAgent, options_msg, ["feedback"]
     )
+    logger.debug(f"{Fore.BLUE}Response: {options_feedback_response}\n{Style.RESET_ALL}")
     options_feedback = (
         options_feedback_response.get("feedback", "")
         if isinstance(options_feedback_response, dict)
@@ -411,26 +368,36 @@ async def validate_and_revise_options(
     )
 
     if options_feedback:
+        logger.info(f"{Fore.GREEN}[REVISING OPTIONS]\n{Style.RESET_ALL}")
         revise_options_prompt_content = revise_options_prompt(
             context, dm_response_text, options_feedback
         )
         revise_options_msg = [
             {"content": revise_options_prompt_content, "role": "user"}
         ]
+        logger.debug(f"{Fore.BLUE}MSG: {revise_options_msg}\n{Style.RESET_ALL}")
         revised_options_response = await get_agent_response(
             dm_agent, DMAgent, revise_options_msg, ["response"]
         )
-        return (
+        logger.debug(
+            f"{Fore.BLUE}Response: {revised_options_response}\n{Style.RESET_ALL}"
+        )
+        response = (
             revised_options_response.get("response", "")
             if isinstance(revised_options_response, dict)
             else dm_response_text
         )
-
+        logger.debug(f"{Fore.BLUE}Returning: {response}\n{Style.RESET_ALL}")
+        return response
+    logger.debug(f"{Fore.BLUE}Returning: {dm_response_text}\n{Style.RESET_ALL}")
     return dm_response_text
 
 
 # Helper function to save conversation pair to database
 def save_conversation_pair(db, saved_game_id, order, user_input, gm_response_text):
+    logger.info(f"{Fore.GREEN}[SAVING CONVERSATION TO DB]\n{Style.RESET_ALL}")
+    logger.debug(f"{Fore.BLUE}User: {user_input}\n")
+    logger.debug(f"GM Response: {gm_response_text}\n{Style.RESET_ALL}")
     new_conversation_pair = ConversationPair(
         game_id=saved_game_id,
         order=order,
@@ -443,6 +410,7 @@ def save_conversation_pair(db, saved_game_id, order, user_input, gm_response_tex
 
 
 def get_storyline(db, saved_game_id):
+    logger.info(f"{Fore.GREEN}[GETTING STORYLINE FROM DB]\n{Style.RESET_ALL}")
     conversation_pairs = (
         db.query(ConversationPair)
         .filter_by(game_id=saved_game_id)
@@ -455,21 +423,25 @@ def get_storyline(db, saved_game_id):
             for pair in conversation_pairs
         ]
     )
+    logger.debug(f"{Fore.BLUE}Storyline: \n{storyline}\n{Style.RESET_ALL}")
     return storyline, conversation_pairs
 
 
 async def handle_invalid_action(
     context, storyline, user_input, storyteller_agent, dm_agent
 ):
+    logger.info(f"{Fore.GREEN}[CHECKING FOR INVALID ACTION]\n{Style.RESET_ALL}")
     action_validation_prompt_content = validate_player_action_prompt(
         context, storyline, user_input
     )
     action_validation_msg = [
         {"content": action_validation_prompt_content, "role": "user"}
     ]
+    logger.debug(f"{Fore.BLUE}MSG: {action_validation_msg}\n{Style.RESET_ALL}")
     action_feedback_response = await get_agent_response(
         storyteller_agent, StorytellerAgent, action_validation_msg, ["feedback"]
     )
+    logger.debug(f"{Fore.BLUE}Response: {action_feedback_response}\n{Style.RESET_ALL}")
     action_feedback = (
         action_feedback_response.get("feedback", "")
         if isinstance(action_feedback_response, dict)
@@ -477,21 +449,30 @@ async def handle_invalid_action(
     )
 
     if action_feedback:
+        logger.info(f"{Fore.GREEN}[SENDING ACTION FEEDBACK]\n{Style.RESET_ALL}")
         inform_feedback_prompt_content = inform_invalid_action_prompt(
             context, storyline, user_input
         )
         inform_feedback_msg = [
             {"content": inform_feedback_prompt_content, "role": "user"}
         ]
+        logger.debug(f"{Fore.BLUE}MSG: {inform_feedback_msg}\n{Style.RESET_ALL}")
         inform_feedback_response = await get_agent_response(
             dm_agent, DMAgent, inform_feedback_msg, ["response"]
         )
-        return (
+        logger.debug(
+            f"{Fore.BLUE}Response: {inform_feedback_response}\n{Style.RESET_ALL}"
+        )
+        response = (
             inform_feedback_response.get("response", "")
             if isinstance(inform_feedback_response, dict)
             else ""
         )
-    return None  # No invalid action detected
+
+        logger.debug(f"{Fore.BLUE}Returning: {response}\n{Style.RESET_ALL}")
+        return response
+    logger.debug(f"{Fore.BLUE}Returning: None\n{Style.RESET_ALL}")
+    return None
 
 
 # Main Function
@@ -504,13 +485,15 @@ async def generate_gm_response(
     db: Session,
 ) -> Dict[str, str]:
     try:
-        logger.debug(f"{Fore.MAGENTA}[START] Generating GM response.{Style.RESET_ALL}")
+        logger.info(f"{Fore.GREEN}[GENERATING GM RESPONSE]\n{Style.RESET_ALL}")
 
         saved_game = db.query(SavedGame).filter_by(id=saved_game_id).first()
         if not saved_game:
-            logger.error(f"Saved game with ID {saved_game_id} not found.")
+            logger.error(
+                f"{Fore.RED}Saved game with ID {saved_game_id} not found.\n{Style.RESET_ALL}"
+            )
             return {
-                "response": "Error: Unable to find the saved game session. Please start a new game."
+                "response": "Error: Unable to find the saved game session. Please click 'start a new game'."
             }
 
         # Retrieve storyline and context
@@ -526,43 +509,148 @@ async def generate_gm_response(
             }
 
         if is_new_campaign:
+            # Initial campaign response generation
             dm_response_text = await generate_initial_campaign_response(
                 user_input, context, dm_agent
             )
-            dm_response_text = await validate_and_revise_storyline(
+            logger.debug(
+                f"{Fore.BLUE}Initial Campaign Response: {dm_response_text}\n{Style.RESET_ALL}"
+            )
+            if len(dm_response_text.strip()) == 0:
+                error_message = f"{Fore.RED}Error: Failed to generate initial campaign response.\n{Style.RESET_ALL}"
+                logger.error(error_message)
+                return {"response": error_message}
+
+            # Validation and revision of the storyline
+            dm_response_revised_text = await validate_and_revise_storyline(
                 context, storyline, dm_response_text, storyteller_agent, dm_agent
             )
-            dm_response_text = await validate_and_revise_options(
-                context, dm_response_text, storyteller_agent, dm_agent
+            logger.debug(
+                f"{Fore.BLUE}Revised Campaign Response: {dm_response_revised_text}\n{Style.RESET_ALL}"
             )
-            save_conversation_pair(db, saved_game_id, 1, user_input, dm_response_text)
-            return {"response": dm_response_text}  # Only GM response text
+            if len(dm_response_revised_text) == 0:
+                error_message = f"{Fore.RED}Error: Failed to validate and revise storyline. Returning original response.\n{Style.RESET_ALL}"
+                logger.error(error_message)
+                # Saving conversation and returning final response
+                save_conversation_pair(
+                    db, saved_game_id, 1, user_input, dm_response_text
+                )
+                logger.info(
+                    f"{Fore.GREEN}[RETURNING] {dm_response_text}\n{Style.RESET_ALL}"
+                )
+                return {"response": dm_response_text}
+
+            # Validation and revision of options
+            dm_response_revised_options_text = await validate_and_revise_options(
+                context, dm_response_revised_text, storyteller_agent, dm_agent
+            )
+            logger.debug(
+                f"{Fore.BLUE}Revised Options Response: {dm_response_revised_options_text}\n{Style.RESET_ALL}"
+            )
+            if len(dm_response_revised_options_text) == 0:
+                error_message = f"{Fore.RED}Error: Failed to validate and revise options. Returning original response.\n{Style.RESET_ALL}"
+                logger.error(error_message)
+                # Saving conversation and returning final response
+                save_conversation_pair(
+                    db, saved_game_id, 1, user_input, dm_response_revised_text
+                )
+                logger.info(
+                    f"{Fore.GREEN}[RETURNING] {dm_response_revised_text}\n{Style.RESET_ALL}"
+                )
+                return {"response": dm_response_revised_text}
+
+            # Saving conversation and returning final response
+            save_conversation_pair(
+                db, saved_game_id, 1, user_input, dm_response_revised_options_text
+            )
+            logger.info(
+                f"{Fore.GREEN}[RETURNING] {dm_response_revised_options_text}\n{Style.RESET_ALL}"
+            )
+            return {"response": dm_response_revised_options_text}
 
         else:
             # Validate action and handle invalid actions if necessary
             invalid_action_response = await handle_invalid_action(
                 context, storyline, user_input, storyteller_agent, dm_agent
             )
+
             if invalid_action_response:
+                logger.info(
+                    f"{Fore.GREEN}[INVALID RESPONSE] Returning: {invalid_action_response}\n{Style.RESET_ALL}"
+                )
+
                 return {"response": invalid_action_response}
 
+            # Continue the campaign response
             dm_response_text = await continue_campaign_response(
                 user_input, context, storyline, dm_agent
             )
-            dm_response_text = await validate_and_revise_storyline(
-                context, dm_response_text, storyline, storyteller_agent, dm_agent
-            )
-            dm_response_text = await validate_and_revise_options(
-                context, dm_response_text, storyteller_agent, dm_agent
+
+            logger.debug(
+                f"{Fore.BLUE}Continue Campaign Initial Response: {dm_response_text}\n{Style.RESET_ALL}"
             )
 
+            if len(dm_response_text) == 0:
+                error_message = f"{Fore.RED}Error: Failed to continue campaign response.\n{Style.RESET_ALL}"
+                logger.error(error_message)
+                return {"response": error_message}
+
+            # Validation and revision of the storyline
+            dm_response_revised_text = await validate_and_revise_storyline(
+                context, storyline, dm_response_text, storyteller_agent, dm_agent
+            )
+            logger.debug(
+                f"{Fore.BLUE}Revised Response: {dm_response_revised_text}\n{Style.RESET_ALL}"
+            )
+            if len(dm_response_text) == 0:
+                error_message = f"{Fore.RED}Error: Failed to validate and revise storyline. Returning original response.\n{Style.RESET_ALL}"
+                logger.error(error_message)
+                # Save conversation and return final response
+                new_order = len(conversation_pairs) + 1
+                save_conversation_pair(
+                    db, saved_game_id, new_order, user_input, dm_response_text
+                )
+                logger.info(
+                    f"{Fore.GREEN}[RETURNING] {dm_response_text}\n{Style.RESET_ALL}"
+                )
+                return {"response": dm_response_text}
+
+            # Validation and revision of options
+            dm_response_revised_options_text = await validate_and_revise_options(
+                context, dm_response_revised_text, storyteller_agent, dm_agent
+            )
+            logger.debug(
+                f"{Fore.BLUE}Revised Options Response: {dm_response_revised_options_text}\n{Style.RESET_ALL}"
+            )
+
+            if len(dm_response_revised_options_text) == 0:
+                error_message = f"{Fore.RED}Error: Failed to validate and revise options. Returning original response.\n{Style.RESET_ALL}"
+                logger.error(error_message)
+                # Save conversation and return final response
+                new_order = len(conversation_pairs) + 1
+                save_conversation_pair(
+                    db, saved_game_id, new_order, user_input, dm_response_revised_text
+                )
+                logger.info(
+                    f"{Fore.GREEN}[RETURNING] {dm_response_revised_text}\n{Style.RESET_ALL}"
+                )
+                return {"response": dm_response_revised_text}
+
+            # Save conversation and return final response
             new_order = len(conversation_pairs) + 1
             save_conversation_pair(
-                db, saved_game_id, new_order, user_input, dm_response_text
+                db,
+                saved_game_id,
+                new_order,
+                user_input,
+                dm_response_revised_options_text,
             )
-            return {"response": dm_response_text}  # Only GM response text
+            logger.info(
+                f"{Fore.GREEN}[RETURNING] {dm_response_revised_options_text}\n{Style.RESET_ALL}"
+            )
+            return {"response": dm_response_revised_options_text}
 
     except Exception as e:
-        logger.error(f"[ERROR] Error in GM response generation: {e}")
+        logger.error(f"{Fore.RED}[ERROR GENERATING GM RESPONSE] {e}\n{Style.RESET_ALL}")
         logger.error(traceback.format_exc())
         return {"response": "Error generating GM response."}
