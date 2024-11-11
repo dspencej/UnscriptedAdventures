@@ -3,7 +3,7 @@
 import json
 import logging
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 import urllib3
 from colorama import Fore, Style
 
@@ -34,6 +34,9 @@ MAX_RETRIES = 6
 # Import ORM models and database utilities
 from sqlalchemy.orm import Session  # noqa: E402
 from models.save_game_models import SavedGame, ConversationPair  # noqa: E402
+
+DMAgent = "DMAgent"
+StorytellerAgent = "StorytellerAgent"
 
 
 # Helper Functions
@@ -76,7 +79,7 @@ async def parse_response(
 
 async def send_feedback(
     agent, agent_name: str, expected_keys: List[str], previous_response: str
-) -> Optional[dict]:
+) -> Optional[Union[dict, str]]:
     feedback_msg_content = format_feedback_prompt(expected_keys, previous_response)
     feedback_msg = [{"content": feedback_msg_content, "role": "user"}]
     logger.info(
@@ -144,7 +147,7 @@ async def get_agent_response(
                 key not in parsed_response for key in expected_keys
             ):
                 logger.warning(
-                    f"{Fore.YELLOW}[REQUESTING FEEDBACK] Response from {agent_name}{Style.RESET_ALL}\n"
+                    f"{Fore.YELLOW}[REQUESTING FEEDBACK] Missing keys or invalid format from {agent_name}{Style.RESET_ALL}\n"
                 )
 
                 feedback_response = await send_feedback(
@@ -155,15 +158,22 @@ async def get_agent_response(
                     agent_name, feedback_response, expected_keys
                 )
 
-                # Check if feedback response has the required keys
+                # Log each feedback attempt to confirm retry mechanism
+                logger.debug(
+                    f"{Fore.YELLOW}[FEEDBACK RETRY] Feedback attempt {attempt_number}/{max_retries} - Parsed response: {parsed_response}{Style.RESET_ALL}"
+                )
+
+                # If feedback response has the required keys, return it
                 if parsed_response and all(
                     key in parsed_response for key in expected_keys
                 ):
-                    return parsed_response  # Return if feedback response is valid
+                    return parsed_response
                 else:
-                    retries += 1  # Retry if feedback did not resolve the issue
+                    # Retry if feedback did not resolve the issue
+                    retries += 1
                     continue
 
+            # Valid parsed response, return it
             return parsed_response
 
         except Exception as e:
@@ -172,8 +182,7 @@ async def get_agent_response(
                 f"{e}{Style.RESET_ALL}"
             )
             logger.error(traceback.format_exc())
-
-        retries += 1
+            retries += 1
 
     logger.warning(f"{Fore.RED}[FINAL FAILURE] All retries exhausted.{Style.RESET_ALL}")
     return {"response": ""}
@@ -221,8 +230,8 @@ def build_conversation_context(
         [f"- {key}: {value}" for key, value in user_preferences.items()]
     )
 
-    # Filter out excluded fields and build character details text
-    character_details = "\n".join(
+    # Filter out excluded fields and build core character details text
+    character_core_details = "\n".join(
         [
             f"- {key.capitalize()}: {value}"
             for key, value in current_character.items()
@@ -230,7 +239,89 @@ def build_conversation_context(
         ]
     )
 
-    return f"User Preferences:\n{preferences_text}\n\nCharacter Details:\n{character_details}\n"
+    # Add alignment if available
+    alignment = current_character.get("alignment", "Unknown")
+
+    # Ensure background is a dictionary; handle case where it's a string or missing
+    background = current_character.get("background", {})
+    if isinstance(background, str):
+        background_text = f"Background: {background}"
+    else:
+        background_text = (
+            f"Name: {background.get('name', 'Unknown')}\n"
+            f"Feature: {background.get('feature', 'None')}\n"
+            f"Personality Traits: {', '.join(background.get('personality_traits', []))}\n"
+            f"Ideals: {', '.join(background.get('ideals', []))}\n"
+            f"Bonds: {', '.join(background.get('bonds', []))}\n"
+            f"Flaws: {', '.join(background.get('flaws', []))}"
+        )
+
+    # Add skills and proficiencies if available
+    skills = current_character.get("skills", [])
+    skills_text = (
+        "\n".join([f"  - {skill.name} ({skill.ability})" for skill in skills])
+        if skills
+        else "None"
+    )
+
+    proficiencies = current_character.get("proficiencies", [])
+    proficiencies_text = (
+        "\n".join([f"  - {prof.name} ({prof.type})" for prof in proficiencies])
+        if proficiencies
+        else "None"
+    )
+
+    # Add languages if available
+    languages = current_character.get("languages", [])
+    languages_text = (
+        ", ".join([language.name for language in languages]) if languages else "None"
+    )
+
+    # Add feats if available
+    feats = current_character.get("feats", [])
+    feats_text = (
+        "\n".join([f"  - {feat.name}: {feat.description}" for feat in feats])
+        if feats
+        else "None"
+    )
+
+    # Add features if available
+    features = current_character.get("features", [])
+    features_text = (
+        "\n".join(
+            [f"  - {feature.name}: {feature.description}" for feature in features]
+        )
+        if features
+        else "None"
+    )
+
+    return f"""User Preferences:
+{preferences_text}
+
+Character Core Details:
+{character_core_details}
+
+Alignment:
+{alignment}
+
+Background:
+{background_text}
+
+Skills:
+{skills_text}
+
+Proficiencies:
+{proficiencies_text}
+
+Languages:
+{languages_text}
+
+Feats:
+{feats_text}
+
+Features:
+{features_text}
+"""
 
 
 async def handle_storyline_feedback(
@@ -252,6 +343,157 @@ async def handle_storyline_feedback(
     return None
 
 
+# Helper function to generate initial DM response and handle feedback
+async def generate_initial_campaign_response(user_input, context, dm_agent):
+    dm_prompt_content = create_campaign_prompt(user_input, context)
+    dm_msg = [{"content": dm_prompt_content, "role": "user"}]
+    dm_response = await get_agent_response(dm_agent, DMAgent, dm_msg, ["response"])
+    return dm_response.get("response", "") if isinstance(dm_response, dict) else ""
+
+
+# Helper function for continuing an existing campaign
+async def continue_campaign_response(user_input, context, storyline, dm_agent):
+    dm_continue_prompt_content = continue_campaign_prompt(
+        context, storyline, user_input
+    )
+    dm_continue_msg = [{"content": dm_continue_prompt_content, "role": "user"}]
+    dm_response = await get_agent_response(
+        dm_agent, DMAgent, dm_continue_msg, ["response"]
+    )
+    return dm_response.get("response", "") if isinstance(dm_response, dict) else ""
+
+
+# Helper function to validate and revise storyline
+async def validate_and_revise_storyline(
+    context, storyline, dm_response_text, storyteller_agent, dm_agent
+):
+    prompt_content = validate_storyline_prompt(context, storyline)
+    msg = [{"content": prompt_content, "role": "user"}]
+    feedback_response = await get_agent_response(
+        storyteller_agent, StorytellerAgent, msg, ["feedback"]
+    )
+    feedback = (
+        feedback_response.get("feedback", "")
+        if isinstance(feedback_response, dict)
+        else ""
+    )
+
+    if feedback:
+        revise_prompt_content = revise_storyline_prompt(
+            context, dm_response_text, feedback
+        )
+        revise_msg = [{"content": revise_prompt_content, "role": "user"}]
+        revised_response = await get_agent_response(
+            dm_agent, DMAgent, revise_msg, ["response"]
+        )
+        return (
+            revised_response.get("response", "")
+            if isinstance(revised_response, dict)
+            else dm_response_text
+        )
+
+    return dm_response_text
+
+
+# Helper function to validate and revise options
+async def validate_and_revise_options(
+    context, dm_response_text, storyteller_agent, dm_agent
+):
+    options_prompt_content = validate_options_prompt(context, dm_response_text)
+    options_msg = [{"content": options_prompt_content, "role": "user"}]
+    options_feedback_response = await get_agent_response(
+        storyteller_agent, StorytellerAgent, options_msg, ["feedback"]
+    )
+    options_feedback = (
+        options_feedback_response.get("feedback", "")
+        if isinstance(options_feedback_response, dict)
+        else ""
+    )
+
+    if options_feedback:
+        revise_options_prompt_content = revise_options_prompt(
+            context, dm_response_text, options_feedback
+        )
+        revise_options_msg = [
+            {"content": revise_options_prompt_content, "role": "user"}
+        ]
+        revised_options_response = await get_agent_response(
+            dm_agent, DMAgent, revise_options_msg, ["response"]
+        )
+        return (
+            revised_options_response.get("response", "")
+            if isinstance(revised_options_response, dict)
+            else dm_response_text
+        )
+
+    return dm_response_text
+
+
+# Helper function to save conversation pair to database
+def save_conversation_pair(db, saved_game_id, order, user_input, gm_response_text):
+    new_conversation_pair = ConversationPair(
+        game_id=saved_game_id,
+        order=order,
+        user_input=user_input,
+        gm_response=gm_response_text,
+        timestamp=datetime.datetime.now(datetime.UTC),
+    )
+    db.add(new_conversation_pair)
+    db.commit()
+
+
+def get_storyline(db, saved_game_id):
+    conversation_pairs = (
+        db.query(ConversationPair)
+        .filter_by(game_id=saved_game_id)
+        .order_by(ConversationPair.order)
+        .all()
+    )
+    storyline = "\n".join(
+        [
+            f"User: {pair.user_input}\nGM: {pair.gm_response}"
+            for pair in conversation_pairs
+        ]
+    )
+    return storyline, conversation_pairs
+
+
+async def handle_invalid_action(
+    context, storyline, user_input, storyteller_agent, dm_agent
+):
+    action_validation_prompt_content = validate_player_action_prompt(
+        context, storyline, user_input
+    )
+    action_validation_msg = [
+        {"content": action_validation_prompt_content, "role": "user"}
+    ]
+    action_feedback_response = await get_agent_response(
+        storyteller_agent, StorytellerAgent, action_validation_msg, ["feedback"]
+    )
+    action_feedback = (
+        action_feedback_response.get("feedback", "")
+        if isinstance(action_feedback_response, dict)
+        else ""
+    )
+
+    if action_feedback:
+        inform_feedback_prompt_content = inform_invalid_action_prompt(
+            context, storyline, user_input
+        )
+        inform_feedback_msg = [
+            {"content": inform_feedback_prompt_content, "role": "user"}
+        ]
+        inform_feedback_response = await get_agent_response(
+            dm_agent, DMAgent, inform_feedback_msg, ["response"]
+        )
+        return (
+            inform_feedback_response.get("response", "")
+            if isinstance(inform_feedback_response, dict)
+            else ""
+        )
+    return None  # No invalid action detected
+
+
 # Main Function
 async def generate_gm_response(
     user_input: str,
@@ -263,274 +505,64 @@ async def generate_gm_response(
 ) -> Dict[str, str]:
     try:
         logger.debug(f"{Fore.MAGENTA}[START] Generating GM response.{Style.RESET_ALL}")
-        # Retrieve the saved game
+
         saved_game = db.query(SavedGame).filter_by(id=saved_game_id).first()
         if not saved_game:
             logger.error(f"Saved game with ID {saved_game_id} not found.")
             return {
-                "response": "Error: Unable to find the saved game session. Please start a new game.",
-                "full_storyline": "",
+                "response": "Error: Unable to find the saved game session. Please start a new game."
             }
 
-        # Retrieve conversation pairs ordered by 'order'
-        conversation_pairs = (
-            db.query(ConversationPair)
-            .filter_by(game_id=saved_game_id)
-            .order_by(ConversationPair.order)
-            .all()
-        )
-
-        # Reconstruct the storyline
-        storyline = "\n".join(
-            [
-                f"User: {pair.user_input}\nGM: {pair.gm_response}"
-                for pair in conversation_pairs
-            ]
-        )
-        logger.info(f"{Fore.GREEN}[RECONSTRUCTING STORYLINE] {Style.RESET_ALL}\n")
-        logger.debug(f"{Fore.BLUE}Full storyline: {storyline}{Style.RESET_ALL}\n")
-
-        dm_agent = agents.get("DMAgent")
-        if not dm_agent:
-            return {
-                "response": "Error starting a new campaign.",
-                "full_storyline": storyline,
-            }
-
-        storyteller_agent = agents.get("StorytellerAgent")
-        if not storyteller_agent:
-            return {
-                "response": "Error validating the storyline.",
-                "full_storyline": storyline,
-            }
-
-        is_new_campaign = len(conversation_pairs) == 0
+        # Retrieve storyline and context
+        storyline, conversation_pairs = get_storyline(db, saved_game_id)
         context = build_conversation_context(user_preferences, current_character)
+        is_new_campaign = len(conversation_pairs) == 0
+
+        dm_agent = agents.get(DMAgent)
+        storyteller_agent = agents.get(StorytellerAgent)
+        if not dm_agent or not storyteller_agent:
+            return {
+                "response": "Error: Missing agents for campaign response generation."
+            }
 
         if is_new_campaign:
-            # 1. Generate initial campaign prompt
-            dm_prompt_content = create_campaign_prompt(user_input, context)
-            dm_msg = [{"content": dm_prompt_content, "role": "user"}]
-            dm_response = await get_agent_response(
-                dm_agent, "DMAgent", dm_msg, ["response"]
+            dm_response_text = await generate_initial_campaign_response(
+                user_input, context, dm_agent
             )
-            dm_response_text = (
-                dm_response.get("response", "") if isinstance(dm_response, dict) else ""
+            dm_response_text = await validate_and_revise_storyline(
+                context, storyline, dm_response_text, storyteller_agent, dm_agent
             )
-
-            # 2. Validate storyline consistency
-            storyteller_prompt_content = validate_storyline_prompt(context, storyline)
-            storyteller_msg = [{"content": storyteller_prompt_content, "role": "user"}]
-            storyteller_response = await get_agent_response(
-                storyteller_agent, "StorytellerAgent", storyteller_msg, ["feedback"]
+            dm_response_text = await validate_and_revise_options(
+                context, dm_response_text, storyteller_agent, dm_agent
             )
-            feedback = (
-                storyteller_response.get("feedback", "")
-                if isinstance(storyteller_response, dict)
-                else ""
-            )
-
-            # 3. Revise storyline based on feedback if needed
-            if feedback:
-                revise_prompt_content = revise_storyline_prompt(
-                    context, dm_response_text, feedback
-                )
-                revise_msg = [{"content": revise_prompt_content, "role": "user"}]
-                revised_response = await get_agent_response(
-                    dm_agent, "DMAgent", revise_msg, ["response"]
-                )
-                dm_response_text = (
-                    revised_response.get("response", "")
-                    if isinstance(revised_response, dict)
-                    else ""
-                )
-
-            # 4. Validate options in DM response
-            options_validation_prompt_content = validate_options_prompt(
-                context, dm_response_text
-            )
-            options_validation_msg = [
-                {"content": options_validation_prompt_content, "role": "user"}
-            ]
-            options_feedback_response = await get_agent_response(
-                storyteller_agent,
-                "StorytellerAgent",
-                options_validation_msg,
-                ["feedback"],
-            )
-            options_feedback = (
-                options_feedback_response.get("feedback", "")
-                if isinstance(options_feedback_response, dict)
-                else ""
-            )
-
-            # 5. Revise options based on feedback if needed
-            if options_feedback:
-                revise_options_prompt_content = revise_options_prompt(
-                    context, dm_response_text, options_feedback
-                )
-                revise_options_msg = [
-                    {"content": revise_options_prompt_content, "role": "user"}
-                ]
-                revised_options_response = await get_agent_response(
-                    dm_agent, "DMAgent", revise_options_msg, ["response"]
-                )
-                dm_response_text = (
-                    revised_options_response.get("response", "")
-                    if isinstance(revised_options_response, dict)
-                    else ""
-                )
-
-            # Save the new conversation pair to the database
-            new_conversation_pair = ConversationPair(
-                game_id=saved_game_id,
-                order=1,
-                user_input=user_input,
-                gm_response=dm_response_text,
-                timestamp=datetime.datetime.now(datetime.UTC),
-            )
-            db.add(new_conversation_pair)
-            db.commit()
-
-            return {"response": dm_response_text, "full_storyline": storyline}
+            save_conversation_pair(db, saved_game_id, 1, user_input, dm_response_text)
+            return {"response": dm_response_text}  # Only GM response text
 
         else:
-            # 1. Validate player's action for ongoing campaign
-            action_validation_prompt_content = validate_player_action_prompt(
-                context, storyline, user_input
+            # Validate action and handle invalid actions if necessary
+            invalid_action_response = await handle_invalid_action(
+                context, storyline, user_input, storyteller_agent, dm_agent
             )
-            action_validation_msg = [
-                {"content": action_validation_prompt_content, "role": "user"}
-            ]
+            if invalid_action_response:
+                return {"response": invalid_action_response}
 
-            action_feedback_response = await get_agent_response(
-                storyteller_agent,
-                "StorytellerAgent",
-                action_validation_msg,
-                ["feedback"],
+            dm_response_text = await continue_campaign_response(
+                user_input, context, storyline, dm_agent
             )
-            action_feedback = (
-                action_feedback_response.get("feedback", "")
-                if isinstance(action_feedback_response, dict)
-                else ""
+            dm_response_text = await validate_and_revise_storyline(
+                context, dm_response_text, storyline, storyteller_agent, dm_agent
+            )
+            dm_response_text = await validate_and_revise_options(
+                context, dm_response_text, storyteller_agent, dm_agent
             )
 
-            if action_feedback:
-                # 2. Inform the player if action is invalid
-                inform_feedback_prompt_content = inform_invalid_action_prompt(
-                    context, storyline, user_input
-                )
-                inform_feedback_msg = [
-                    {"content": inform_feedback_prompt_content, "role": "user"}
-                ]
-                inform_feedback_response = await get_agent_response(
-                    dm_agent, "DMAgent", inform_feedback_msg, ["response"]
-                )
-                dm_response_text = (
-                    inform_feedback_response.get("response", "")
-                    if isinstance(inform_feedback_response, dict)
-                    else ""
-                )
-                return {"response": dm_response_text, "full_storyline": storyline}
-
-            # 3. Continue campaign
-            dm_continue_prompt_content = continue_campaign_prompt(
-                context, storyline, user_input
-            )
-            dm_continue_msg = [{"content": dm_continue_prompt_content, "role": "user"}]
-            dm_response = await get_agent_response(
-                dm_agent, "DMAgent", dm_continue_msg, ["response"]
-            )
-            dm_response_text = (
-                dm_response.get("response", "") if isinstance(dm_response, dict) else ""
-            )
-
-            # 4. Validate storyline in continuation
-            storyline_validation_prompt_content = validate_storyline_prompt(
-                context, dm_response_text
-            )
-            storyline_validation_msg = [
-                {"content": storyline_validation_prompt_content, "role": "user"}
-            ]
-            storyline_feedback_response = await get_agent_response(
-                storyteller_agent,
-                "StorytellerAgent",
-                storyline_validation_msg,
-                ["feedback"],
-            )
-            storyline_feedback = (
-                storyline_feedback_response.get("feedback", "")
-                if isinstance(storyline_feedback_response, dict)
-                else ""
-            )
-
-            # 5. Revise storyline based on feedback if needed
-            if storyline_feedback:
-                revise_storyline_prompt_content = revise_storyline_prompt(
-                    context, dm_response_text, storyline_feedback
-                )
-                revise_storyline_msg = [
-                    {"content": revise_storyline_prompt_content, "role": "user"}
-                ]
-                revised_storyline_response = await get_agent_response(
-                    dm_agent, "DMAgent", revise_storyline_msg, ["response"]
-                )
-                dm_response_text = (
-                    revised_storyline_response.get("response", "")
-                    if isinstance(revised_storyline_response, dict)
-                    else ""
-                )
-
-            # 6. Validate options in DM response for continuation
-            options_validation_prompt_content = validate_options_prompt(
-                context, dm_response_text
-            )
-            options_validation_msg = [
-                {"content": options_validation_prompt_content, "role": "user"}
-            ]
-            options_feedback_response = await get_agent_response(
-                storyteller_agent,
-                "StorytellerAgent",
-                options_validation_msg,
-                ["feedback"],
-            )
-            options_feedback = (
-                options_feedback_response.get("feedback", "")
-                if isinstance(options_feedback_response, dict)
-                else ""
-            )
-
-            # 7. Revise options based on feedback if needed
-            if options_feedback:
-                revise_options_prompt_content = revise_options_prompt(
-                    context, dm_response_text, options_feedback
-                )
-                revise_options_msg = [
-                    {"content": revise_options_prompt_content, "role": "user"}
-                ]
-                revised_options_response = await get_agent_response(
-                    dm_agent, "DMAgent", revise_options_msg, ["response"]
-                )
-                dm_response_text = (
-                    revised_options_response.get("response", "")
-                    if isinstance(revised_options_response, dict)
-                    else ""
-                )
-
-            # Save the new conversation pair to the database
             new_order = len(conversation_pairs) + 1
-            new_conversation_pair = ConversationPair(
-                game_id=saved_game_id,
-                order=new_order,
-                user_input=user_input,
-                gm_response=dm_response_text,
-                timestamp=datetime.datetime.now(datetime.UTC),
+            save_conversation_pair(
+                db, saved_game_id, new_order, user_input, dm_response_text
             )
-            db.add(new_conversation_pair)
-            db.commit()
+            return {"response": dm_response_text}  # Only GM response text
 
-            return {"response": dm_response_text, "full_storyline": storyline}
     except Exception as e:
         logger.error(f"[ERROR] Error in GM response generation: {e}")
         logger.error(traceback.format_exc())
-        return {"response": "Error generating GM response.", "full_storyline": ""}
+        return {"response": "Error generating GM response."}
