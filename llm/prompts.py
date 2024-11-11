@@ -270,16 +270,19 @@ def format_feedback_prompt(expected_keys, previous_response):
         [f'"{key}": "<value for {key}>"' for key in expected_keys]
     )
 
-    return f"""Your previous response was not delivered because it did not meet the required JSON format. 
-    **Do NOT change the content of your response**. Only adjust the formatting to match the JSON structure below.
+    return f"""Your previous response did not meet the correct JSON format.
+
+    **Do NOT add any extra layers or additional JSON blocks. The response should be structured exactly as shown below. Only adjust the formatting.**
 
     **Instructions:**
-    1. Format your response in JSON, using only the keys: {', '.join(expected_keys)}.
-    2. Each key must have a value, even if it is an empty string ("").
-    3. Provide ONLY the JSON block; do not add any text or explanations outside it.
+    - Use exactly the keys: {', '.join(expected_keys)}.
+    - Every key must have a value, even if it’s an empty string ("").
+    - Return only the JSON block, without additional layers, explanations, or new JSON keys.
 
-    **Previous Response:**  
-    {previous_response or "Your previous response was empty. Use the required key with an empty string as the value (in JSON)."}
+    **Previous Response (keep this exact content but structure it as shown):**
+    ```
+    {previous_response}
+    ```
 
     **Required JSON Format:**
     ```json
@@ -288,12 +291,10 @@ def format_feedback_prompt(expected_keys, previous_response):
     }}
     ```
 
-    **Correct Format Example:**
+    **Example JSON Format (using your exact content):**
     ```json
     {{
-        "{expected_keys[0]}": "<Your response here>"
+        "{expected_keys[0]}": "{previous_response.replace('"', '\\"') if previous_response else ''}"
     }}
     ```
-
-    **Follow this exact JSON format without adding extra text or nested keys.**
     """
