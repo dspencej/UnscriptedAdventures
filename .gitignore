@@ -11,4 +11,26 @@ tmp/
 directory_structure.txt
 print_dirs.py
 
+neo4j/*
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.env
 .env
+*.sqlite3
+
+# Ignore Neo4j data and logs
+neo4j/data/
+neo4j/logs/
+neo4j/import/
+neo4j/plugins/
+
+
+test.ipynb
+
+# IDEs
+.vscode/
+.idea/
+
+docker-compose.override.yml

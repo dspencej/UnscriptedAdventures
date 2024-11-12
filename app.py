@@ -18,6 +18,15 @@ from models.game_preferences_models import GamePreferences
 from models.game_preferences_models import populate_defaults as populate_game_defaults
 from models.save_game_models import SavedGame
 
+from entity_extraction import (
+    process_texts_to_entities_and_triplets,
+    write_to_database,
+    close_driver,
+)
+
+BATCH_THRESHOLD = 3  # Process every 3 gm_responses
+
+
 app = FastAPI()
 
 # Secret key for session management
@@ -59,18 +68,21 @@ logger = logging.getLogger(__name__)
 async def index(request: Request):
     request.session.setdefault("conversation_history", [])
     request.session.setdefault("current_character", None)
+    request.session.setdefault("corpora", []) 
 
     current_character = request.session.get("current_character")
     conversation_history = request.session.get("conversation_history")
+    corpora = request.session.get("corpora")
+
     return templates.TemplateResponse(
         "index.html",
         {
             "request": request,
             "current_character": current_character,
             "conversation_history": conversation_history,
+            "corpora": corpora,
         },
     )
-
 
 @app.post("/interact")
 async def interact(request: Request):
@@ -80,6 +92,8 @@ async def interact(request: Request):
     conversation_history = request.session.get("conversation_history", [])
     storyline = request.session.get("storyline", "")
     current_character = request.session.get("current_character", {})
+    corpora = request.session.get("corpora", [])  # Retrieve existing corpora
+
 
     if not user_input:
         return JSONResponse({"status": "error", "message": "Input cannot be empty!"}, status_code=400)
@@ -96,10 +110,35 @@ async def interact(request: Request):
     request.session["conversation_history"].append({"role": "user", "content": user_input})
     request.session["conversation_history"].append({"role": "gm", "content": gm_response_text})
 
-    
+    #print(f"here is the gm response innit:{gm_response_text}\n")
+
+    logger.info(f"GM response: {gm_response_text}")
+
+    # Add gm_response_text to corpora
+    corpora.append(gm_response_text)
+    request.session["corpora"] = corpora
+
+    print(f"\n\nthe lenght of the corpora is :{len(corpora)}")
+
+    try:
+        entity_dict, standardized_triplets = process_texts_to_entities_and_triplets(corpora)
+        write_to_database(entity_dict, standardized_triplets)
+    except Exception as e:
+        logger.error(f"Error processing and writing to database: {e}")
+        # Depending on requirements, you might want to handle this differently
 
     return JSONResponse({"gm_response": gm_response_text})
 
+
+
+
+@app.on_event("shutdown")
+def shutdown_event():
+    # make sure that the Neo4j driver is closed when the app shuts down
+    try:
+        close_driver()
+    except Exception as e:
+        logger.error(f"Error closing Neo4j driver: {e}")
 
 @app.post("/new_game")
 async def new_game(request: Request):
