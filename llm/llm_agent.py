@@ -579,7 +579,27 @@ async def generate_gm_response(
                     f"{Fore.GREEN}[INVALID RESPONSE] Returning: {invalid_action_response}\n{Style.RESET_ALL}"
                 )
 
-                return {"response": invalid_action_response}
+                # New code to call LLM-based skill suggestion function
+                skill_suggestion = await get_llm_skill_check_suggestion(
+                    user_input, context, storyteller_agent
+                )
+
+                # If a skill suggestion is provided, return it as the response
+                if skill_suggestion:
+                    d20_roll = random.randint(1,20)
+                    modifier = current_character.get(f"{skill_suggestion.lower()}_mod", 0)
+                    total = d20_roll + modifier
+                    response_text = (
+                        f"{invalid_action_response} "
+                        f"\nSuggested Skill Check: {skill_suggestion} "
+                        f"(Roll: {d20_roll} + Modifier: {modifier} = Total: {total})."
+                    )
+                    logger.info(f"Returning skill check suggestion: {response_text}")
+                    return {"response": response_text}
+                else:
+                    logger.info(f"No skill suggestion provided, returning invalid action response.")
+                    # Return the default invalid response if no skill suggestion is found
+                    return {"response": invalid_action_response}
 
             # Continue the campaign response
             dm_response_text = await continue_campaign_response(
@@ -654,3 +674,48 @@ async def generate_gm_response(
         logger.error(f"{Fore.RED}[ERROR GENERATING GM RESPONSE] {e}\n{Style.RESET_ALL}")
         logger.error(traceback.format_exc())
         return {"response": "Error generating GM response."}
+
+async def get_llm_skill_check_suggestion(user_input: str, context: dict, agent) -> Optional[str]:
+    prompt = f"""
+    You are a game master for a role-playing game. Based on the player's action and their character's abilities, 
+    suggest an appropriate skill check from the following options: 
+    Athletics, Acrobatics, Sleight of Hand, Stealth, Arcana, History, Investigation, Nature, Religion, 
+    Animal Handling, Insight, Medicine, Perception, Survival, Deception, Intimidation, Performance, Persuasion.
+
+    **Player Action:** {user_input}
+    **Character Abilities and Proficiencies:** {context}
+
+    Provide the recommended skill check as a single word, e.g., "Perception" or "Persuasion". 
+    If none of these skill checks are appropriate, return "None".
+    """
+
+    try:
+        # Request response from agent
+        response = await agent.generate_reply(prompt)
+        
+        # Log to confirm type of response
+        logger.debug(f"[LLM RESPONSE] Full response from agent: {response}")
+        
+        # Ensure response is processed as a dictionary if JSON-like structure is expected
+        if isinstance(response, str):
+            recommended_skill = {"response": response.strip()}  # Wrap string in dict if it’s plain text
+        elif isinstance(response, dict):
+            print(response)
+            recommended_skill = response.get("response", "").strip()
+        
+        valid_skills = {
+            "Athletics", "Acrobatics", "Sleight of Hand", "Stealth", "Arcana",
+            "History", "Investigation", "Nature", "Religion", "Animal Handling",
+            "Insight", "Medicine", "Perception", "Survival", "Deception",
+            "Intimidation", "Performance", "Persuasion"
+        }
+        
+        if recommended_skill in valid_skills:
+            return recommended_skill
+        else:
+            return None
+
+    except Exception as e:
+        logger.error(f"Error generating LLM skill check suggestion: {e}")
+        return None
+
