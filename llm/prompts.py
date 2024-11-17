@@ -272,13 +272,14 @@ def validate_player_action_prompt(context, dm_response, user_input):
     ```
     5. If the action is **invalid** (e.g., the character attempts to use a spell or ability they do not have), respond with feedback explaining **why** the action is invalid and suggest a few alternative actions that are appropriate for their character.
     6. When generating the list of alternative actions make sure to only use characters that are appropriate in  JSON format: (Replace * with -)
-    7. **Response Format:**
+    7. Don't forget to close a bracketed list with ] if you start one with [
+    8. **Response Format:**
     ```json
     {{
         "feedback": "<Your feedback here>"
     }}
     ```
-    8. **Do not include any text outside of the JSON block. Only provide the JSON response. Do not include nested keys.**
+    9. **Do not include any text outside of the JSON block. Only provide the JSON response. Do not include nested keys.**
     """
 
 
