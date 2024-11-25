@@ -8,6 +8,8 @@ import urllib3
 from colorama import Fore, Style
 import random
 
+from utils.utils import get_skill_modifier
+
 from llm.prompts import (
     continue_campaign_prompt,
     create_campaign_prompt,
@@ -600,7 +602,7 @@ async def generate_gm_response(
                     feedback = await generate_roll_feedback(context, user_input, skill_suggestion, total, success, storyteller_agent)
                     logger.debug(f"Generated feedback: {feedback}")
                     response_text = (
-                        f"(Roll: {d20_roll} + Modifier: {modifier} = Total: {total})."
+                        f"({skill_suggestion}, Roll: {d20_roll} + Modifier: {modifier} = Total: {total})."
                         f"{feedback} "
                     )
                     return {"response": response_text}
@@ -772,45 +774,3 @@ async def generate_roll_feedback(context, user_input, skill, total_roll, success
         logger.warning(f"Unexpected response type: {type(response)}")
 
     return feedback
-
-    
-def get_skill_modifier(character, skill, proficiency_bonus=None):
-
-    skill_to_ability = {
-    "Athletics": "strength",
-    "Acrobatics": "dexterity",
-    "Sleight of Hand": "dexterity",
-    "Stealth": "dexterity",
-    "Arcana": "intelligence",
-    "History": "intelligence",
-    "Investigation": "intelligence",
-    "Nature": "intelligence",
-    "Religion": "intelligence",
-    "Animal Handling": "wisdom",
-    "Insight": "wisdom",
-    "Medicine": "wisdom",
-    "Perception": "wisdom",
-    "Survival": "wisdom",
-    "Deception": "charisma",
-    "Intimidation": "charisma",
-    "Performance": "charisma",
-    "Persuasion": "charisma",
-    }
-
-    # Map skill to ability
-    ability = skill_to_ability.get(skill)
-
-    character_ability = character.get(f"{ability}")
-
-    modifier = (character_ability - 10) // 2
-    # Get the ability modifier
-    #ability_mod = character.get(f"{ability}_mod", 0)
-    
-    # Check if the character is proficient in the skill
-    #is_proficient = character.get("proficiencies", {}).get(skill, False)
-    
-    # Add proficiency bonus if proficient
-    #if is_proficient:
-        #return ability_mod + proficiency_bonus
-    return modifier
-
