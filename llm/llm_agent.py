@@ -56,7 +56,7 @@ async def parse_response(
             logger.info(
                 f"{Fore.GREEN}[SUCCESS] Parsed JSON from {agent_name}{Style.RESET_ALL}\n"
             )
-            logger.debug(f"{Fore.BLUE}{parsed_json}{Style.RESET_ALL}\n")
+            #logger.debug(f"{Fore.BLUE}{parsed_json}{Style.RESET_ALL}\n")
 
             # Validate expected keys are present
             missing_keys = [key for key in expected_keys if key not in parsed_json]
@@ -574,15 +574,16 @@ async def generate_gm_response(
 
         else:
             # Validate action and handle invalid actions if necessary
+            #logger.debug("INVALIDACTION!!!!!!")
             invalid_action_response = await handle_invalid_action(
                 context, storyline, user_input, storyteller_agent, dm_agent
             )
-
+            #logger.debug("ISSUE!!!!!!")
             if invalid_action_response:
                 logger.info(
                     f"{Fore.GREEN}[INVALID RESPONSE] Returning: {invalid_action_response}\n{Style.RESET_ALL}"
                 )
-
+                #logger.debug("INVALIDACTIONREPONSE!!!!!")
                 # New code to call LLM-based skill suggestion function
                 skill_suggestion = await get_llm_skill_check_suggestion(
                     user_input, context, storyteller_agent
@@ -595,12 +596,12 @@ async def generate_gm_response(
                     d20_roll = random.randint(1,20)
                     modifier = get_skill_modifier(current_character, skill_suggestion)
                     total = d20_roll + modifier
-                    logger.debug(f"Rolled total: {total}")
+                    #logger.debug(f"Rolled total: {total}")
                     success_threshold = 12
-                    logger.debug(f"Current success threshold: {success_threshold}")
+                    #logger.debug(f"Current success threshold: {success_threshold}")
                     success = total >= success_threshold
                     feedback = await generate_roll_feedback(context, user_input, skill_suggestion, total, success, storyteller_agent)
-                    logger.debug(f"Generated feedback: {feedback}")
+                    #logger.debug(f"Generated feedback: {feedback}")
                     response_text = (
                         f"({skill_suggestion}, Roll: {d20_roll} + Modifier: {modifier} = Total: {total})."
                         f"{feedback} "
