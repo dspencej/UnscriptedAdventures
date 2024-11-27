@@ -1,14 +1,59 @@
+# Exclude virtual environments
 .venv/
+venv/
+
+# Exclude IDE configurations
 .idea/
+.vscode/
+
+# Exclude JSON files (if not needed in the build)
 *.json
+
+# Exclude cache and temporary files
 .flask_session
 .cache
+tmp/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Exclude environment files
+.env
+*.env
+
+# Exclude database files
 chromadb_dm/*
 chromadb_st/*
+characters.db
+*.sqlite3
+
+# Exclude resources and large files
 resources/dm_resources/*.pdf
 resources/storytelling_resources/*.pdf
-tmp/
+
+# Exclude scripts and test files (if not needed)
 directory_structure.txt
 print_dirs.py
 /print_directory_structure.py
-characters.db
+test.ipynb
+
+# Exclude Neo4j data and logs
+neo4j/data/
+neo4j/logs/
+neo4j/import/
+neo4j/plugins/
+neo4j/*
+
+# Exclude Docker overrides
+docker-compose.override.yml
+
+# Exclude Git-related files
+.git/
+.gitignore
+
+# Exclude OS-specific files
+.DS_Store
+
+# Exclude node_modules (if applicable)
+node_modules/

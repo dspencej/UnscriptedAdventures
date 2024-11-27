@@ -5,7 +5,7 @@ def create_campaign_prompt(user_input, context):
     return f"""
     You are the Game Master (GM) for a campaign in a role-playing game based on the player's preferences and 5th Edition mechanics. Create an immersive, consistent world setting while introducing a compelling storyline.
 
-    **Player Preferences and Character Details:**
+    **Player Preferences, Character Details and the context of the game:**
     {context}
 
     **Player Input:**
@@ -283,38 +283,96 @@ def validate_player_action_prompt(context, dm_response, user_input):
 
 def format_feedback_prompt(expected_keys, previous_response):
     # Generate JSON example with all expected keys
-    json_example = ",\n        ".join(
-        [
-            f'"{key}": "<original response without nested quotation marks>"'
-            for key in expected_keys
-        ]
-    )
+    json_lines = [
+        f'"{key}": "<original response without nested quotation marks>"'
+        for key in expected_keys
+    ]
+    json_example = ",\n        ".join(json_lines)
+
+    correct_json_lines = [
+        f'"{key}": "The guard eyes you warily and says, \'Greetings, traveler.\'"'
+        for key in expected_keys
+    ]
+    correct_json_example = ", ".join(correct_json_lines)
 
     return f"""Your previous response did not meet the correct JSON format.
 
-    **Original GM Response:**
-    {previous_response}
+        **Original GM Response:**
+        {previous_response}
+
+        **Instructions:**
+        1. Keep your response as close to the original as possible while correcting for proper JSON encoding.
+        2. Use exactly these keys: **{', '.join(expected_keys)}**.
+        3. **Each key must have a value**, even if it’s an empty string (`""`).
+        4. **The value must be a single string**: avoid line breaks, use single quotes for nested dialogue (e.g., `'He said, Hello!'`), and ensure no extra whitespace.
+        5. **Escape special characters properly**, including double quotes (`\\"`), backslashes (`\\\\`), and newlines (`\\n`).
+        6. **Return only the JSON block** with the specified keys. Do not add explanations, additional keys, or any text outside the JSON block.
+        7. **Respond using the exact JSON format below**:
+
+        **Required JSON Format:**
+        ```json
+        {{
+            {json_example}
+        }}
+        ```
+        **Correct JSON Format:**
+        ```json
+        {{
+            {correct_json_example}
+        }}
+        ```
+"""
+
+def extract_entities_prompt(text_corpus):
+    return f"""
+    Your task is to analyze the provided text corpus and extract all relevant entities that should be included in a knowledge graph. Focus on identifying proper nouns, important concepts, and significant terms related to the context.
+
+    **Text Corpus:**
+    {text_corpus}
 
     **Instructions:**
-    1. Keep your response as close to the original as possible while correcting for proper JSON encoding.
-    2. Use exactly these keys: **{', '.join(expected_keys)}**.
-    3. **Each key must have a value**, even if it’s an empty string ("").
-    4. **The value must be a single string**: avoid line breaks, use single quotes for nested dialogue (e.g., 'He said, Hello!'), and ensure no extra whitespace.
-    5. **Escape special characters properly**, including double quotes (\"), backslashes (\\), and newlines (\\n).
-    6. **Return only the JSON block** with the specified keys. Do not add explanations, additional keys, or any text outside the JSON block.
-    7. **Respond using the exact JSON format below**:
+    1. Identify and list all unique entities present in the text.
+    2. Categorize each entity based on its type (e.g., Person, Location, Organization, Event, etc.).
+    3. Ensure that entities are accurately extracted without duplicates.
+    4. Present the extracted entities in a JSON array with each entity having a `name` and `type`.
 
-    **Required JSON Format:**
+    **JSON Response Format:**
     ```json
-    {{
-        {json_example}
-    }}
-    ```
-
-    **Correct JSON Example**:
-    ```json
-    {{
-        {", ".join([f'"{key}": "The guard eyes you warily and says, \'Greetings, traveler.\'"' for key in expected_keys])}
-    }}
+    [
+        {{
+            "name": "Entity Name",
+            "type": "Entity Type"
+        }},
+        ...
+    ]
     ```
     """
+def map_relationships_prompt(entities, text_corpus):
+    return f"""
+    Your task is to analyze the provided text corpus and identify relationships between the given entities. Use the entities extracted previously to determine how they are connected within the context.
+
+    **Entities:**
+    {entities}
+
+    **Text Corpus:**
+    {text_corpus}
+
+    **Instructions:**
+    1. Identify all meaningful relationships between the entities.
+    2. For each relationship, specify the `source`, `target`, and `relationship_type`.
+    3. Ensure that the relationships accurately reflect the interactions or associations described in the text.
+    4. Present the relationships in a JSON array with each relationship having `source`, `target`, and `relationship_type`.
+
+    **JSON Response Format:**
+    ```json
+    [
+        {{
+            "source": "Entity A",
+            "target": "Entity B",
+            "relationship_type": "Relationship Type"
+        }},
+        ...
+    ]
+    ```
+    """
+

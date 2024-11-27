@@ -30,6 +30,13 @@ from models.save_game_models import SavedGame, ConversationPair
 from models.user_models import User
 from db.database import engine, SessionLocal, Base
 
+from entity_extraction.neo4j_integration import reset_graph, driver as G_driver,close_driver, write_to_database
+from entity_extraction.setupneo4j import ping_neo4j
+
+from entity_extraction.data_processing import process_texts_to_entities_and_triplets
+
+
+
 # Load environment variables
 load_dotenv()
 
@@ -38,6 +45,11 @@ app = FastAPI()
 # Secret key for session management
 app_secret_key = os.getenv("SECRET_KEY", "default_secret_key")
 app.add_middleware(SessionMiddleware, secret_key=app_secret_key)  # type: ignore
+
+#moresecrets
+NEO4J_URI = os.getenv("NEO4J_URI")
+NEO4J_USER = os.getenv("NEO4J_USER")
+NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD")
 
 # Set up static files and templates
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -58,6 +70,16 @@ def get_current_user(db: Session = Depends(get_db)):
     # In a real application, you would retrieve the user from the session or token
     user = db.query(User).filter_by(username="default_user").first()
     return user
+
+# Startup Event to Ping Neo4j
+@app.on_event("startup")
+def startup_event():
+    logger.info("communicating with Docker env...\nStarting up: Pinging Neo4j to ensure it's running...")
+    
+    # block the startup until Neo4j is available
+    ping_neo4j(NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD)
+    logger.info("Neo4j is up and running. Proceeding to start the server.")
+
 
 
 # Logging Configuration
@@ -182,6 +204,11 @@ async def interact(
         else "Unknown response"
     )
 
+    # Process texts and update Neo4j database
+    #texts_to_process = [user_input, gm_response_text]
+    entity_dict, standardized_triplets = process_texts_to_entities_and_triplets(gm_response_text)
+    write_to_database(entity_dict, standardized_triplets)
+
     return JSONResponse({"gm_response": gm_response_text})
 
 
@@ -202,10 +229,22 @@ async def new_game(
             },
             status_code=400,
         )
+    
+        # In the /new_game route:
+    try:
+        # Reset the Neo4j graph
+        reset_graph(G_driver)
+        logger.info("******Neo4j graph has been reset for the new game.******")
+    except Exception as e:
+        logger.error(f"Failed to reset Neo4j graph: {e}")
+        return JSONResponse(
+            {"status": "error", "message": "Failed to reset the game state."},
+            status_code=500,
+        )
 
     # Create a new SavedGame instance
     new_game = SavedGame(  # noqa
-        game_name=f"{current_character['name']} - {datetime.datetime.now(datetime.UTC).strftime('%Y%m%d%H%M%S')}",
+        game_name=f"{current_character['name']} - {datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%d%H%M%S')}",
         user_id=user.id,
         character_id=current_character["id"],
     )
@@ -690,5 +729,4 @@ async def post_llm_config(request: Request):
 
 if __name__ == "__main__":
     import uvicorn
-
     uvicorn.run("app:app", host="127.0.0.1", port=8001, log_level="info")

@@ -21,6 +21,8 @@ from llm.prompts import (
 import traceback
 import datetime
 
+from entity_extraction.neo4j_integration import retrieve_relevant_information
+from entity_extraction.data_processing import format_graph_data 
 # SSL Warning Suppression
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -216,6 +218,7 @@ def extract_json_from_text(response: str) -> Optional[str]:
 def build_conversation_context(
     user_preferences: Dict[str, str],
     current_character: Dict[str, Any],
+    graph_information: str
 ) -> str:
     # Define fields to exclude from the character details
     excluded_fields = {
@@ -244,6 +247,9 @@ def build_conversation_context(
     
     Character Core Details:
     {character_core_details}
+
+    Relevant Story Information:
+    {graph_information}
     
     """
 
@@ -403,7 +409,7 @@ def save_conversation_pair(db, saved_game_id, order, user_input, gm_response_tex
         order=order,
         user_input=user_input,
         gm_response=gm_response_text,
-        timestamp=datetime.datetime.now(datetime.UTC),
+        timestamp=datetime.datetime.now(datetime.timezone.utc),
     )
     db.add(new_conversation_pair)
     db.commit()
@@ -495,10 +501,12 @@ async def generate_gm_response(
             return {
                 "response": "Error: Unable to find the saved game session. Please click 'start a new game'."
             }
+        graph_data = retrieve_relevant_information()
+        graph_information = format_graph_data(graph_data)
 
         # Retrieve storyline and context
         storyline, conversation_pairs = get_storyline(db, saved_game_id)
-        context = build_conversation_context(user_preferences, current_character)
+        context = build_conversation_context(user_preferences, current_character, graph_information)
         is_new_campaign = len(conversation_pairs) == 0
 
         dm_agent = agents.get(DMAgent)
