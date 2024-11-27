@@ -606,6 +606,14 @@ async def generate_gm_response(
                         f"({skill_suggestion}, Roll: {d20_roll} + Modifier: {modifier} = Total: {total})."
                         f"{feedback} "
                     )
+                    new_order = len(conversation_pairs) + 1
+                    save_conversation_pair(
+                        db,
+                        saved_game_id,
+                        new_order,
+                        user_input,
+                        response_text
+                    )
                     return {"response": response_text}
                 else:
                     logger.info(f"No skill suggestion provided, returning invalid action response.")
