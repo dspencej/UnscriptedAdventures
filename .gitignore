@@ -1,3 +1,4 @@
+ls
 .venv/
 .idea/
 *.json
@@ -12,3 +13,4 @@ directory_structure.txt
 print_dirs.py
 /print_directory_structure.py
 characters.db
+/__pycache__/
