@@ -10,7 +10,6 @@ from autogen.agentchat.contrib.retrieve_user_proxy_agent import RetrieveUserProx
 from chromadb.utils import embedding_functions
 
 # Import configurations based on LLM provider
-from llm.llm_config import get_llm_config
 
 # ============================
 # Logging Configuration
@@ -24,8 +23,12 @@ logger.setLevel(logging.DEBUG)
 # ============================
 
 # Paths for ChromaDB storage
-CHROMA_DB_PATH_DM = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "chromadb_dm"))
-CHROMA_DB_PATH_ST = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "chromadb_st"))
+CHROMA_DB_PATH_DM = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "chromadb_dm")
+)
+CHROMA_DB_PATH_ST = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "chromadb_st")
+)
 
 # Initialize ChromaDB clients
 chroma_client_dm = chromadb.PersistentClient(path=CHROMA_DB_PATH_DM)
@@ -41,6 +44,7 @@ embedding_function = embedding_functions.SentenceTransformerEmbeddingFunction(
 # ============================
 # Helper Functions
 # ============================
+
 
 def create_ragproxyagent(agent_type: str) -> RetrieveUserProxyAgent:
     """
@@ -76,9 +80,10 @@ def create_ragproxyagent(agent_type: str) -> RetrieveUserProxyAgent:
 # Agent Factory Functions
 # ============================
 
+
 def create_dm_agent(llm_config: Dict[str, Any]) -> ConversableAgent:
     """
-    Factory function to create a Dungeon Master (DM) ConversableAgent.
+    Factory function to create a Game Master (GM) ConversableAgent.
 
     :param llm_config: Configuration dictionary for the LLM
     :return: Configured ConversableAgent instance for DM
@@ -87,11 +92,7 @@ def create_dm_agent(llm_config: Dict[str, Any]) -> ConversableAgent:
     dm_agent = ConversableAgent(
         name="DMAgent",
         system_message=(
-            "You are the Dungeon Master (DM) in a Dungeons & Dragons 5th Edition campaign, guiding a single player through an immersive and engaging storytelling experience. "
-            "Your responsibilities include creating consistent, coherent narratives that align with the player's preferences and the previous storyline. "
-            "Always follow the instructions provided in the prompts, and ensure that your responses are in the required JSON format. "
-            "Do not include any text outside of the JSON block. "
-            "Do not ask the player any questions; instead, use the provided context and previous storyline to craft the next scene."
+            "You are the Game Master (GM) in a campaign for the world's Most Popular role playing game (5th Edition)."
         ),
         llm_config=llm_config,
         human_input_mode="NEVER",
@@ -112,12 +113,7 @@ def create_storyteller_agent(llm_config: Dict[str, Any]) -> ConversableAgent:
     storyteller_agent = ConversableAgent(
         name="StorytellerAgent",
         system_message=(
-            "You are a Storytelling Expert for a Dungeons & Dragons 5th Edition campaign. "
-            "Your role is to objectively evaluate the campaign storyline, ensuring it aligns with the player's preferences and maintains consistency with previous events. "
-            "Provide constructive feedback on narrative structure, character development, plot consistency, and adherence to the player's preferences. "
-            "Do not introduce new story elements or narrate the story. "
-            "Always respond in the required JSON format. "
-            "Do not include any text outside of the JSON block."
+            "You are a Storytelling Expert for a campaign in the world's Most Popular role playing game (5th Edition)."
         ),
         llm_config=llm_config,
         human_input_mode="NEVER",
@@ -130,6 +126,7 @@ def create_storyteller_agent(llm_config: Dict[str, Any]) -> ConversableAgent:
 # ============================
 # Agent Registration
 # ============================
+
 
 def get_agents(llm_config: Dict[str, Any]) -> Dict[str, ConversableAgent]:
     """

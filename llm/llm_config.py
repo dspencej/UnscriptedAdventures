@@ -3,7 +3,8 @@
 import os
 from typing import Dict, Any
 
-def get_llm_config(provider: str) -> Dict[str, Any]:
+
+def get_llm_config(provider: str, model: str) -> Dict[str, Any]:
     """
     Retrieves the LLM configuration based on the provider.
 
@@ -14,10 +15,16 @@ def get_llm_config(provider: str) -> Dict[str, Any]:
         config = {
             "config_list": [
                 {
-                    "model": "llama3:latest",  # Default model for Ollama
+                    "model": model,
                     "base_url": "http://localhost:11434/v1",
                     "api_key": "ollama",
                     "price": [0, 0],
+                    "max_tokens": 2048,
+                    "temperature": 1.2,
+                    "top_p": 0.9,
+                    "n": 1,
+                    "frequency_penalty": 0.2,
+                    "presence_penalty": 0.2,
                 }
             ],
             "timeout": 1000,
@@ -32,13 +39,13 @@ def get_llm_config(provider: str) -> Dict[str, Any]:
         config = {
             "config_list": [
                 {
-                    "model": "gpt-4",  # You can set this to a default model
+                    "model": model,
                     "api_key": api_key,
                     "api_type": "openai",
                     "base_url": "https://api.openai.com/v1",
                     "n": 1,
                     "max_tokens": 2048,
-                    "temperature": 0.7,
+                    "temperature": 1.2,
                     "top_p": 0.9,
                 }
             ],

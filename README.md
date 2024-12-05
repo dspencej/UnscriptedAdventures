@@ -1,19 +1,19 @@
 
 # UnscriptedAdventures
 
-UnscriptedAdventures is a text-based RPG game that harnesses the power of Large Language Model (LLM) agents to deliver a dynamic, immersive experience. Players engage with a virtual Game Master (GM) and diverse Non-Player Characters (NPCs) through a chatbot interface, making choices that directly influence the unfolding narrative.
+UnscriptedAdventures is a text-based RPG game that leverages Large Language Models (LLMs) to deliver a dynamic, immersive experience. Players engage with a virtual Game Master (GM) and Non-Player Characters (NPCs) through a chatbot interface, making choices that directly influence the unfolding narrative. The application is built using FastAPI, a modern, high-performance web framework for building APIs with Python.
 
-**Note: UnscriptedAdventures is currently in Alpha development.**
+**Note:** UnscriptedAdventures is currently in Alpha development. Documentation updates are ongoing. The project remains actively developed, and contributions are welcome. If you wish to contribute, please create a Pull Request.
 
-![UnscriptedAdventures Preview](https://raw.githubusercontent.com/dspencej/UnscriptedAdventures/refs/heads/main/images/social_preview.png)
+![UnscriptedAdventures Preview](https://raw.githubusercontent.com/dspencej/UnscriptedAdventures/main/images/social_preview.png)
 
 ## Features
 
 - **Dynamic Storytelling:** A virtual GM driven by an LLM agent guides the story, adapting to player choices and actions in real-time.
 - **Character Creation:** Customize your character with a variety of traits, professions, and backgrounds to suit your play style.
 - **Engaging Interactions:** Communicate with NPCs and make decisions that influence the game's evolving storyline and outcomes.
-- **Reward System:** An innovative system that evaluates player engagement and adjusts the GM's strategy to keep the experience exciting.
-  
+- **Reward System:** An innovative system evaluates player engagement and adjusts the GM's strategy to keep the experience exciting.
+
 ## Getting Started
 
 For detailed instructions, see the [Getting Started Guide](https://github.com/dspencej/UnscriptedAdventures/wiki/Getting-Started-Guide) in the Wiki.
@@ -42,15 +42,24 @@ For detailed instructions, see the [Getting Started Guide](https://github.com/ds
 
 ### Running the Application
 
-1. **Start the Flask Development Server:**
+1. **Start the FastAPI Application with Uvicorn:**
 
    ```bash
-   flask run
+   uvicorn app:app --reload
    ```
+
+   The `--reload` flag enables auto-reloading, allowing the server to restart upon code changes. This is useful during development.
 
 2. **Open Your Browser:**
 
-   Visit `http://127.0.0.1:5000` in your web browser to start playing!
+   Visit `http://127.0.0.1:8000` in your web browser to start playing.
+
+3. **Interactive API Documentation:**
+
+   FastAPI provides interactive API documentation:
+
+   - **Swagger UI:** Accessible at `http://127.0.0.1:8000/docs`
+   - **ReDoc:** Accessible at `http://127.0.0.1:8000/redoc`
 
 ## Contributing
 
@@ -64,7 +73,7 @@ For guidelines on contributing, see the [How to Contribute](https://github.com/d
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License—see the [LICENSE](LICENSE) file for details.
 
 ## Contact
 
@@ -76,4 +85,4 @@ For bug reports, you can use the [Bug Report Template](https://github.com/dspenc
 
 Enjoy your next story in the world of UnscriptedAdventures!
 
-![UnscriptedAdventures Preview](https://raw.githubusercontent.com/dspencej/UnscriptedAdventures/refs/heads/main/images/social_preview_2.png)
+![UnscriptedAdventures Preview](https://raw.githubusercontent.com/dspencej/UnscriptedAdventures/main/images/social_preview_2.png)

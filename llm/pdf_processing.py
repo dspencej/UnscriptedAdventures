@@ -1,17 +1,14 @@
 import os
-
 import chromadb
 from chromadb.utils import embedding_functions
-from PyPDF2 import PdfReader
-from sentence_transformers import SentenceTransformer
+import pdfplumber
 
 
 def process_pdfs(docs_path, chroma_db_path, collection_name, embedding_model_name):
     # Initialize ChromaDB client
     client = chromadb.PersistentClient(path=chroma_db_path)
 
-    # Initialize embedding model
-    embedding_model = SentenceTransformer(embedding_model_name)
+    # Initialize embedding function directly
     embedding_function = embedding_functions.SentenceTransformerEmbeddingFunction(
         model_name=embedding_model_name
     )
@@ -25,12 +22,13 @@ def process_pdfs(docs_path, chroma_db_path, collection_name, embedding_model_nam
     for filename in os.listdir(docs_path):
         if filename.endswith(".pdf"):
             pdf_path = os.path.join(docs_path, filename)
-            reader = PdfReader(pdf_path)
             text = ""
-            for page in reader.pages:
-                text += page.extract_text()
+            with pdfplumber.open(pdf_path) as pdf:  # Using pdfplumber to open the PDF
+                for page in pdf.pages:
+                    text += page.extract_text() or ""  # Extract text from each page
+
             # Split text into chunks
-            chunks = [text[i : i + 1000] for i in range(0, len(text), 1000)]
+            chunks = [text[i : i + 1000] for i in range(0, len(text), 1000)]  # noqa
             for idx, chunk in enumerate(chunks):
                 collection.add(
                     documents=[chunk],

@@ -1,7 +1,7 @@
 # app.py
 
 import os
-from datetime import datetime
+import datetime
 import logging
 
 from fastapi import FastAPI, Request, Depends, Form
@@ -18,7 +18,13 @@ from llm.llm_config import get_llm_config
 from llm.agents import get_agents
 from models.character_models import Background, Character, Class, Race
 from models.character_models import populate_defaults as populate_character_defaults
-from models.game_preferences_models import GamePreferences, GameStyleEnum, ToneEnum, DifficultyEnum, ThemeEnum
+from models.game_preferences_models import (
+    GamePreferences,
+    GameStyleEnum,
+    ToneEnum,
+    DifficultyEnum,
+    ThemeEnum,
+)
 from models.game_preferences_models import populate_defaults as populate_game_defaults
 from models.save_game_models import SavedGame, ConversationPair
 from models.user_models import User
@@ -31,11 +37,12 @@ app = FastAPI()
 
 # Secret key for session management
 app_secret_key = os.getenv("SECRET_KEY", "default_secret_key")
-app.add_middleware(SessionMiddleware, secret_key=app_secret_key)
+app.add_middleware(SessionMiddleware, secret_key=app_secret_key)  # type: ignore
 
 # Set up static files and templates
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+
 
 # Dependency for database session
 def get_db():
@@ -45,15 +52,16 @@ def get_db():
     finally:
         db_session.close()
 
+
 # Dependency to get the current user (simplified for this example)
 def get_current_user(db: Session = Depends(get_db)):
     # In a real application, you would retrieve the user from the session or token
-    user = db.query(User).filter_by(username='default_user').first()
+    user = db.query(User).filter_by(username="default_user").first()
     return user
 
 
-# Logging configuration
-logging.basicConfig(level=logging.INFO)
+# Logging Configuration
+logging.basicConfig(level=logging.INFO, format="%(message)s", datefmt="[%X]")
 logger = logging.getLogger(__name__)
 
 # Initialize the database and create tables if they do not exist
@@ -64,11 +72,14 @@ with engine.begin() as conn:
         populate_game_defaults(session)
 
         # Create a default user if not exists
-        default_user = session.query(User).filter_by(username='default_user').first()
+        default_user = session.query(User).filter_by(username="default_user").first()
         if not default_user:
-            default_user = User(username='default_user', email='default_user@example.com')
+            default_user = User(
+                username="default_user", email="default_user@example.com"
+            )
             session.add(default_user)
             session.commit()
+
 
 # Application Routes
 @app.get("/", response_class=HTMLResponse)
@@ -88,7 +99,9 @@ async def index(request: Request, db: Session = Depends(get_db)):
         conversation_history = []
         for pair in conversation_pairs:
             if pair.user_input:
-                conversation_history.append({"role": "user", "content": pair.user_input})
+                conversation_history.append(
+                    {"role": "user", "content": pair.user_input}
+                )
             if pair.gm_response:
                 conversation_history.append({"role": "gm", "content": pair.gm_response})
 
@@ -102,9 +115,11 @@ async def index(request: Request, db: Session = Depends(get_db)):
     )
 
 
-
 @app.post("/interact")
-async def interact(request: Request, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+async def interact(
+    request: Request,
+    db: Session = Depends(get_db),
+):
     data = await request.json()
     user_input = data.get("user_input", "").strip()
     user_preferences = request.session.get("user_preferences", {})
@@ -112,20 +127,29 @@ async def interact(request: Request, db: Session = Depends(get_db), user: User =
     saved_game_id = request.session.get("saved_game_id")
 
     if not user_input:
-        return JSONResponse({"status": "error", "message": "Input cannot be empty!"}, status_code=400)
+        return JSONResponse(
+            {"status": "error", "message": "Input cannot be empty!"}, status_code=400
+        )
     if not user_preferences:
-        return JSONResponse({"status": "error", "message": "Game preferences not set!"}, status_code=400)
+        return JSONResponse(
+            {"status": "error", "message": "Game preferences not set!"}, status_code=400
+        )
     if not current_character:
-        return JSONResponse({"status": "error", "message": "Please load a character!"}, status_code=400)
+        return JSONResponse(
+            {"status": "error", "message": "Please load a character!"}, status_code=400
+        )
     if not saved_game_id:
-        return JSONResponse({"status": "error", "message": "No game started! Please start a new game."}, status_code=400)
+        return JSONResponse(
+            {"status": "error", "message": "No game started! Please start a new game."},
+            status_code=400,
+        )
 
     # Retrieve LLM configuration from session
     provider = request.session.get("llm_provider", "openai")
-    model = request.session.get("llm_model", "gpt-4")  # Adjust default model as needed
+    model = request.session.get("llm_model", "gpt-4")
     try:
         # Get the unified LLM configuration
-        llm_config = get_llm_config(provider)
+        llm_config = get_llm_config(provider, model)  # noqa
     except (EnvironmentError, ValueError) as e:
         logger.error(f"LLM Configuration Error: {e}")
         return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
@@ -137,7 +161,10 @@ async def interact(request: Request, db: Session = Depends(get_db), user: User =
 
     if not dm_agent or not storyteller_agent:
         logger.error("Failed to initialize agents.")
-        return JSONResponse({"status": "error", "message": "Failed to initialize agents."}, status_code=500)
+        return JSONResponse(
+            {"status": "error", "message": "Failed to initialize agents."},
+            status_code=500,
+        )
 
     # Call the GM response generator with the saved_game_id and database session
     gm_response = await generate_gm_response(
@@ -146,24 +173,39 @@ async def interact(request: Request, db: Session = Depends(get_db), user: User =
         current_character=current_character,
         agents=agents,
         saved_game_id=saved_game_id,
-        db=db
+        db=db,
     )
 
-    gm_response_text = gm_response.get("dm_response", "Unknown response") if isinstance(gm_response, dict) else "Unknown response"
+    gm_response_text = (
+        gm_response.get("response", "Unknown response")
+        if isinstance(gm_response, dict)
+        else "Unknown response"
+    )
 
     return JSONResponse({"gm_response": gm_response_text})
 
+
 # Modify the /new_game route
 @app.post("/new_game")
-async def new_game(request: Request, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+async def new_game(
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
     current_character = request.session.get("current_character")
 
     if not current_character:
-        return JSONResponse({"status": "error", "message": "Please select a character before starting a new game."}, status_code=400)
+        return JSONResponse(
+            {
+                "status": "error",
+                "message": "Please select a character before starting a new game.",
+            },
+            status_code=400,
+        )
 
     # Create a new SavedGame instance
-    new_game = SavedGame(
-        game_name=f"{current_character['name']} - {datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
+    new_game = SavedGame(  # noqa
+        game_name=f"{current_character['name']} - {datetime.datetime.now(datetime.UTC).strftime('%Y%m%d%H%M%S')}",
         user_id=user.id,
         character_id=current_character["id"],
     )
@@ -173,21 +215,44 @@ async def new_game(request: Request, db: Session = Depends(get_db), user: User =
 
     # Store saved_game_id in session
     request.session["saved_game_id"] = new_game.id
+    logger.info(f"New game started with ID: {new_game.id} and saved to session.")
+
+    # Confirm session saved the ID correctly
+    if (
+        "saved_game_id" not in request.session
+        or request.session["saved_game_id"] != new_game.id
+    ):
+        logger.error("Failed to store 'saved_game_id' in the session.")
+        return JSONResponse(
+            {
+                "status": "error",
+                "message": "Failed to start the new game due to session error.",
+            },
+            status_code=500,
+        )
 
     return JSONResponse({"message": "New game started.", "saved_game_id": new_game.id})
+
 
 @app.get("/about", response_class=HTMLResponse)
 async def about(request: Request):
     return templates.TemplateResponse("about.html", {"request": request})
 
+
 @app.get("/contact", response_class=HTMLResponse)
 async def contact(request: Request):
     return templates.TemplateResponse("contact.html", {"request": request})
 
+
 @app.post("/submit_contact")
-async def submit_contact(name: str = Form(...), email: str = Form(...), message: str = Form(...)):
-    logger.info(f"Contact form submitted.\nName: {name}, Email: {email}\nMessage: {message}")
+async def submit_contact(
+    name: str = Form(...), email: str = Form(...), message: str = Form(...)
+):
+    logger.info(
+        f"Contact form submitted.\nName: {name}, Email: {email}\nMessage: {message}"
+    )
     return RedirectResponse(url="/thank_you", status_code=303)
+
 
 @app.get("/character_creation", response_class=HTMLResponse)
 async def character_creation(request: Request, db: Session = Depends(get_db)):
@@ -196,8 +261,14 @@ async def character_creation(request: Request, db: Session = Depends(get_db)):
     backgrounds = db.query(Background).all()
     return templates.TemplateResponse(
         "character_creation.html",
-        {"request": request, "races": races, "classes": classes, "backgrounds": backgrounds}
+        {
+            "request": request,
+            "races": races,
+            "classes": classes,
+            "backgrounds": backgrounds,
+        },
     )
+
 
 @app.post("/save_character")
 async def save_character(request: Request, db: Session = Depends(get_db)):
@@ -208,16 +279,20 @@ async def save_character(request: Request, db: Session = Depends(get_db)):
 
     race = db.query(Race).filter_by(name=character_data["race"]).first()
     character_class = db.query(Class).filter_by(name=character_data["class"]).first()
-    background = db.query(Background).filter_by(name=character_data["background"]).first()
+    background = (
+        db.query(Background).filter_by(name=character_data["background"]).first()
+    )
 
     if not race or not character_class or not background:
-        return JSONResponse({"message": "Invalid race, class, or background."}, status_code=400)
+        return JSONResponse(
+            {"message": "Invalid race, class, or background."}, status_code=400
+        )
 
     new_character = Character(
         name=character_data["name"],
-        race=race,
-        background=background,
-        character_class=character_class,
+        race_id=race.id,
+        background_id=background.id,
+        class_id=character_class.id,
         level=int(character_data.get("level", 1)),
         experience_points=int(character_data.get("experience_points", 0)),
         strength=int(character_data.get("strength", 10)),
@@ -257,16 +332,24 @@ async def save_character(request: Request, db: Session = Depends(get_db)):
 
     return JSONResponse({"message": "Character saved successfully!"}, status_code=201)
 
+
 @app.get("/manage_characters", response_class=HTMLResponse)
 async def manage_characters(request: Request, db: Session = Depends(get_db)):
     characters = db.query(Character).all()
-    return templates.TemplateResponse("manage_characters.html", {"request": request, "characters": characters})
+    return templates.TemplateResponse(
+        "manage_characters.html", {"request": request, "characters": characters}
+    )
+
 
 @app.get("/select_character/{character_id}")
-async def select_character(character_id: int, request: Request, db: Session = Depends(get_db)):
+async def select_character(
+    character_id: int, request: Request, db: Session = Depends(get_db)
+):
     character = db.query(Character).get(character_id)
     if not character:
-        return JSONResponse({"status": "error", "message": "Character not found"}, status_code=404)
+        return JSONResponse(
+            {"status": "error", "message": "Character not found"}, status_code=404
+        )
 
     selected_character = {
         "id": character.id,
@@ -289,13 +372,24 @@ async def select_character(character_id: int, request: Request, db: Session = De
     }
     request.session["current_character"] = selected_character
 
-    return JSONResponse({"status": "success", "message": f"Character '{character.name}' loaded successfully", "character": selected_character})
+    return JSONResponse(
+        {
+            "status": "success",
+            "message": f"Character '{character.name}' loaded successfully",
+            "character": selected_character,
+        }
+    )
+
 
 @app.post("/delete_character/{character_id}")
-async def delete_character(character_id: int, request: Request, db: Session = Depends(get_db)):
+async def delete_character(
+    character_id: int, request: Request, db: Session = Depends(get_db)
+):
     character = db.query(Character).get(character_id)
     if not character:
-        return JSONResponse({"status": "error", "message": "Character not found"}, status_code=404)
+        return JSONResponse(
+            {"status": "error", "message": "Character not found"}, status_code=404
+        )
 
     db.delete(character)
     db.commit()
@@ -304,11 +398,20 @@ async def delete_character(character_id: int, request: Request, db: Session = De
     if request.session.get("current_character", {}).get("id") == character_id:
         request.session.pop("current_character", None)
 
-    return JSONResponse({"status": "success", "message": f"Character {character.name} deleted successfully!"})
+    return JSONResponse(
+        {
+            "status": "success",
+            "message": f"Character {character.name} deleted successfully!",
+        }
+    )
+
 
 @app.get("/game_preferences", response_class=HTMLResponse)
-async def game_preferences(request: Request, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
-
+async def game_preferences(
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
     preferences = db.query(GamePreferences).filter_by(user_id=user.id).first()
 
     preferences_data = {
@@ -320,14 +423,26 @@ async def game_preferences(request: Request, db: Session = Depends(get_db), user
 
     request.session["user_preferences"] = preferences_data
 
-    return templates.TemplateResponse("game_preferences.html", {"request": request, "preferences": preferences_data})
+    return templates.TemplateResponse(
+        "game_preferences.html", {"request": request, "preferences": preferences_data}
+    )
+
 
 @app.post("/submit_preferences")
-async def submit_preferences(request: Request, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+async def submit_preferences(
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
     preferences_data = await request.json()
 
-    if not all(preferences_data.get(key) for key in ["gameStyle", "tone", "difficulty", "theme"]):
-        return JSONResponse({"message": "All preferences are required!"}, status_code=400)
+    if not all(
+        preferences_data.get(key)
+        for key in ["gameStyle", "tone", "difficulty", "theme"]
+    ):
+        return JSONResponse(
+            {"message": "All preferences are required!"}, status_code=400
+        )
 
     # Convert strings to Enums
     try:
@@ -338,7 +453,9 @@ async def submit_preferences(request: Request, db: Session = Depends(get_db), us
             "theme": ThemeEnum(preferences_data["theme"]),
         }
     except ValueError as e:
-        return JSONResponse({"message": f"Invalid preference value: {e}"}, status_code=400)
+        return JSONResponse(
+            {"message": f"Invalid preference value: {e}"}, status_code=400
+        )
 
     existing_preferences = db.query(GamePreferences).filter_by(user_id=user.id).first()
     if existing_preferences:
@@ -353,11 +470,19 @@ async def submit_preferences(request: Request, db: Session = Depends(get_db), us
     db.commit()
     return JSONResponse({"message": "Preferences saved successfully!"})
 
+
 @app.post("/load_game/{game_id}")
-async def load_game(game_id: int, request: Request, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+async def load_game(
+    game_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
     saved_game = db.query(SavedGame).filter_by(id=game_id, user_id=user.id).first()
     if not saved_game:
-        return JSONResponse({"status": "error", "message": "Saved game not found"}, status_code=404)
+        return JSONResponse(
+            {"status": "error", "message": "Saved game not found"}, status_code=404
+        )
 
     # Store saved_game_id in session
     request.session["saved_game_id"] = saved_game.id
@@ -384,15 +509,53 @@ async def load_game(game_id: int, request: Request, db: Session = Depends(get_db
             "speed": character.speed,
         }
     else:
-        return JSONResponse({"status": "error", "message": "Character associated with the game not found."}, status_code=404)
+        return JSONResponse(
+            {
+                "status": "error",
+                "message": "Character associated with the game not found.",
+            },
+            status_code=404,
+        )
 
-    return JSONResponse({"status": "success", "message": "Game loaded successfully!"}, status_code=200)
+    return JSONResponse(
+        {"status": "success", "message": "Game loaded successfully!"}, status_code=200
+    )
+
+
+from fastapi import Query  # noqa: E402
+
 
 @app.delete("/delete_character/{character_id}")
-async def delete_character(character_id: int, request: Request, db: Session = Depends(get_db)):
+async def delete_character(  # noqa: F811
+    character_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    confirm: bool = Query(False),
+):
     character = db.query(Character).get(character_id)
     if not character:
-        return JSONResponse({"status": "error", "message": "Character not found"}, status_code=404)
+        return JSONResponse(
+            {"status": "error", "message": "Character not found"}, status_code=404
+        )
+
+    # Check if there are saved games associated with this character
+    saved_games_count = (
+        db.query(SavedGame).filter(SavedGame.character_id == character_id).count()  # type: ignore
+    )
+
+    # If there are saved games and confirm is not set, prompt for confirmation
+    if saved_games_count > 0 and not confirm:
+        return JSONResponse(
+            {
+                "status": "confirm",
+                "message": f"Deleting this character will also delete {saved_games_count} "
+                f"associated saved game(s). Please confirm to proceed.",
+            }
+        )
+
+    # If confirmed, delete saved games and character
+    if saved_games_count > 0:
+        db.query(SavedGame).filter(SavedGame.character_id == character_id).delete()  # type: ignore
 
     db.delete(character)
     db.commit()
@@ -401,22 +564,43 @@ async def delete_character(character_id: int, request: Request, db: Session = De
     if request.session.get("current_character", {}).get("id") == character_id:
         request.session.pop("current_character", None)
 
-    return JSONResponse({"status": "success", "message": f"Character {character.name} deleted successfully!"}, status_code=200)
+    return JSONResponse(
+        {
+            "status": "success",
+            "message": f"Character {character.name} and associated saved games deleted successfully!",
+        }
+    )
+
 
 @app.delete("/delete_game/{game_id}")
-async def delete_game(game_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+async def delete_game(
+    game_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)
+):
     saved_game = db.query(SavedGame).filter_by(id=game_id, user_id=user.id).first()
     if not saved_game:
-        return JSONResponse({"status": "error", "message": "Game not found"}, status_code=404)
+        return JSONResponse(
+            {"status": "error", "message": "Game not found"}, status_code=404
+        )
 
     db.delete(saved_game)
     db.commit()
-    return JSONResponse({"status": "success", "message": "Game deleted successfully!"}, status_code=200)
+    return JSONResponse(
+        {"status": "success", "message": "Game deleted successfully!"}, status_code=200
+    )
+
 
 @app.get("/check_game_exists/{game_name}")
-async def check_game_exists(game_name: str, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
-    exists = db.query(SavedGame).filter_by(user_id=user.id, game_name=game_name).first() is not None
+async def check_game_exists(
+    game_name: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    exists = (
+        db.query(SavedGame).filter_by(user_id=user.id, game_name=game_name).first()
+        is not None
+    )
     return JSONResponse({"exists": exists}, status_code=200)
+
 
 @app.get("/check_character_name/{name}")
 async def check_character_name(name: str, db: Session = Depends(get_db)):
@@ -425,14 +609,23 @@ async def check_character_name(name: str, db: Session = Depends(get_db)):
         return {"exists": True}
     return {"exists": False}
 
+
 @app.get("/manage_games", response_class=HTMLResponse)
-async def manage_games(request: Request, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+async def manage_games(
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
     saved_games = db.query(SavedGame).filter_by(user_id=user.id).all()
-    return templates.TemplateResponse("manage_games.html", {"request": request, "saved_games": saved_games})
+    return templates.TemplateResponse(
+        "manage_games.html", {"request": request, "saved_games": saved_games}
+    )
+
 
 @app.get("/thank_you", response_class=HTMLResponse)
 async def thank_you(request: Request):
     return templates.TemplateResponse("thank_you.html", {"request": request})
+
 
 @app.get("/llm_config", response_class=HTMLResponse)
 async def llm_config(request: Request):
@@ -444,9 +637,10 @@ async def llm_config(request: Request):
         {
             "request": request,
             "current_provider": current_provider,
-            "current_model": current_model
-        }
+            "current_model": current_model,
+        },
     )
+
 
 @app.post("/llm_config", response_class=JSONResponse)
 async def post_llm_config(request: Request):
@@ -459,25 +653,42 @@ async def post_llm_config(request: Request):
     valid_providers = ["openai", "ollama"]
     valid_models = {
         "openai": ["gpt-3.5-turbo", "gpt-4"],
-        "ollama": ["mistral:v0.3", "mistral:7b-instruct-v0.2-q8_0",
-                   "orca-mini:latest", "nomic-embed-text:latest",
-                   "llama3:latest", "llama3:instruct", "mistral:7b-instruct",
-                   "mistral:latest", "mistral:instruct", "llama2:70b", "llama2:13b"]
+        "ollama": [
+            "llama3:latest",
+            "mistral:latest",
+            "llama3.2:latest",
+            "llama3.1:latest",
+            "llama3.1:70b",
+        ],
     }
 
     if provider not in valid_providers:
-        return JSONResponse({"status": "error", "message": "Invalid provider selected."}, status_code=400)
+        return JSONResponse(
+            {"status": "error", "message": "Invalid provider selected."},
+            status_code=400,
+        )
 
     if model not in valid_models.get(provider, []):
-        return JSONResponse({"status": "error", "message": "Invalid model selected for the provider."}, status_code=400)
+        return JSONResponse(
+            {"status": "error", "message": "Invalid model selected for the provider."},
+            status_code=400,
+        )
 
     # Store selections in session
     request.session["llm_provider"] = provider
     request.session["llm_model"] = model
 
     # Return a success response
-    return JSONResponse({"status": "success", "message": "LLM Configuration has been saved successfully!"}, status_code=200)
+    return JSONResponse(
+        {
+            "status": "success",
+            "message": "LLM Configuration has been saved successfully!",
+        },
+        status_code=200,
+    )
+
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run("app:app", host="127.0.0.1", port=8001, log_level="info")
