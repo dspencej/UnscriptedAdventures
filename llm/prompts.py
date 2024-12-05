@@ -1,7 +1,9 @@
 # llm/prompts.py
 import logging
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+
 
 def create_campaign_prompt(user_input, context):
     return f"""
@@ -162,7 +164,7 @@ def revise_storyline_prompt(context, storyline, previous_response, feedback):
 
 
 def validate_options_prompt(context, dm_prompt):
-    logger.debug('validate_options_prompt')
+    logger.debug("validate_options_prompt")
     return f"""
     Review the GM's response to ensure that all options provided align with the player's abilities, character details, and the current scene context.
 
@@ -196,7 +198,7 @@ def validate_options_prompt(context, dm_prompt):
 
 
 def revise_options_prompt(context, dm_response, feedback):
-    logger.debug('revise_options_prompt')
+    logger.debug("revise_options_prompt")
     return f"""
     You are the Game Master (GM) revising your previous response based on feedback. Retain the structure and content of your original response, but make specific adjustments to address the feedback provided.
     
@@ -291,7 +293,7 @@ def validate_player_action_prompt(context, dm_response, user_input):
 
 
 def format_feedback_prompt(expected_keys, previous_response):
-    logger.debug(f"format_feedback_prompt")
+    logger.debug("format_feedback_prompt")
     # Generate JSON example with all expected keys
     json_example = ",\n        ".join(
         [
@@ -324,7 +326,7 @@ def format_feedback_prompt(expected_keys, previous_response):
     **Correct JSON Example**:
     ```json
     {{
-        {", ".join([f'"{key}": "The guard eyes you warily and says, \'Greetings, traveler.\'"' for key in expected_keys])}
+        {", ".join(['"{}": "The guard eyes you warily and says, \'Greetings, traveler.\'"'.format(key) for key in expected_keys])}
     }}
     ```
     """
