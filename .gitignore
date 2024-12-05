@@ -10,3 +10,5 @@ resources/storytelling_resources/*.pdf
 tmp/
 directory_structure.txt
 print_dirs.py
+__pycache__
+map_project.py
