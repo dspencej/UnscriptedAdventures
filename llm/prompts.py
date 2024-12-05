@@ -1,4 +1,8 @@
 # llm/prompts.py
+import logging
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 def create_campaign_prompt(user_input, context):
@@ -160,6 +164,7 @@ def revise_storyline_prompt(context, storyline, previous_response, feedback):
 
 
 def validate_options_prompt(context, dm_prompt):
+    logger.debug("validate_options_prompt")
     return f"""
     Review the GM's response to ensure that all options provided align with the player's abilities, character details, and the current scene context.
 
@@ -193,6 +198,7 @@ def validate_options_prompt(context, dm_prompt):
 
 
 def revise_options_prompt(context, dm_response, feedback):
+    logger.debug("revise_options_prompt")
     return f"""
     You are the Game Master (GM) revising your previous response based on feedback. Retain the structure and content of your original response, but make specific adjustments to address the feedback provided.
     
@@ -209,7 +215,7 @@ def revise_options_prompt(context, dm_response, feedback):
     1. Keep your response as close to the original as possible.
     2. Adjust the options only as needed to incorporate the feedback.
     3. Ensure the options are consistent with the environmental context of the scene.
-    4. Maintain immersion by aligning actions with the game’s theme.
+    4. Maintain immersion by aligning actions with the game’s themeR.
     5. **Always respond in JSON format with the following structure:**
     ```json
     {{
@@ -221,6 +227,7 @@ def revise_options_prompt(context, dm_response, feedback):
 
 
 def inform_invalid_action_prompt(context, storyline, user_input):
+    logger.debug("inform_invalid_action_prompt")
     return f"""
     Provide feedback to the player about why their chosen action is invalid based on their abilities, class, or 5th Edition rules. Suggest alternative actions they could consider that are appropriate for their character.
     
@@ -248,6 +255,7 @@ def inform_invalid_action_prompt(context, storyline, user_input):
 
 
 def validate_player_action_prompt(context, dm_response, user_input):
+    logger.debug("validate_player_action_prompt")
     return f"""
     Your task is to evaluate the player's chosen action and determine whether it is valid based on their character's abilities, class, and 5th Edition rules.
     
@@ -271,17 +279,21 @@ def validate_player_action_prompt(context, dm_response, user_input):
     }}
     ```
     5. If the action is **invalid** (e.g., the character attempts to use a spell or ability they do not have), respond with feedback explaining **why** the action is invalid and suggest a few alternative actions that are appropriate for their character.
-    6. **Response Format:**
+    6. When generating the list of alternative actions make sure to only use characters that are appropriate in  JSON format: (Replace * with -)
+    7. Don't forget to close a bracketed list with ] if you start one with [
+    8. Remember to always close your JSON response with a closing curly bracket
+    9. **Response Format:**
     ```json
     {{
         "feedback": "<Your feedback here>"
     }}
     ```
-    7. **Do not include any text outside of the JSON block. Only provide the JSON response. Do not include nested keys.**
+    10. **Do not include any text outside of the JSON block. Only provide the JSON response. Do not include nested keys.**
     """
 
 
 def format_feedback_prompt(expected_keys, previous_response):
+    logger.debug("format_feedback_prompt")
     # Generate JSON example with all expected keys
     json_lines = [
         f'"{key}": "<original response without nested quotation marks>"'
@@ -300,14 +312,14 @@ def format_feedback_prompt(expected_keys, previous_response):
         **Original GM Response:**
         {previous_response}
 
-        **Instructions:**
-        1. Keep your response as close to the original as possible while correcting for proper JSON encoding.
-        2. Use exactly these keys: **{', '.join(expected_keys)}**.
-        3. **Each key must have a value**, even if it’s an empty string (`""`).
-        4. **The value must be a single string**: avoid line breaks, use single quotes for nested dialogue (e.g., `'He said, Hello!'`), and ensure no extra whitespace.
-        5. **Escape special characters properly**, including double quotes (`\\"`), backslashes (`\\\\`), and newlines (`\\n`).
-        6. **Return only the JSON block** with the specified keys. Do not add explanations, additional keys, or any text outside the JSON block.
-        7. **Respond using the exact JSON format below**:
+    **Instructions:**
+    1. Keep your response as close to the original as possible while correcting for proper JSON encoding.
+    2. Use exactly these keys: **{', '.join(expected_keys)}**.
+    3. **Each key must have a value**, even if it's an empty string ("").
+    4. **The value must be a single string**: avoid line breaks, use single quotes for nested dialogue (e.g., 'He said, Hello!'), and ensure no extra whitespace.
+    5. **Escape special characters properly**, including double quotes (\"), backslashes (\\), and newlines (\\n).
+    6. **Return only the JSON block** with the specified keys. Do not add explanations, additional keys, or any text outside the JSON block.
+    7. **Respond using the exact JSON format below**:
 
         **Required JSON Format:**
         ```json
@@ -365,14 +377,9 @@ def map_relationships_prompt(entities, text_corpus):
 
     **JSON Response Format:**
     ```json
-    [
-        {{
-            "source": "Entity A",
-            "target": "Entity B",
-            "relationship_type": "Relationship Type"
-        }},
-        ...
-    ]
+    {{
+        {", ".join(['"{}": "The guard eyes you warily and says, \'Greetings, traveler.\'"'.format(key) for key in expected_keys])}
+    }}
     ```
     """
 

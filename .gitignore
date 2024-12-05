@@ -35,6 +35,7 @@ resources/storytelling_resources/*.pdf
 # Exclude scripts and test files (if not needed)
 directory_structure.txt
 print_dirs.py
+<<<<<<< HEAD
 /print_directory_structure.py
 test.ipynb
 
@@ -57,3 +58,8 @@ docker-compose.override.yml
 
 # Exclude node_modules (if applicable)
 node_modules/
+=======
+__pycache__
+map_project.py
+/characters.db
+>>>>>>> origin/main

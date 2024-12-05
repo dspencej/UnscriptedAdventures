@@ -6,6 +6,9 @@ import re
 from typing import Any, Dict, List, Optional, Union
 import urllib3
 from colorama import Fore, Style
+import random
+
+from utils.utils import get_skill_modifier
 
 from llm.prompts import (
     continue_campaign_prompt,
@@ -55,7 +58,7 @@ async def parse_response(
             logger.info(
                 f"{Fore.GREEN}[SUCCESS] Parsed JSON from {agent_name}{Style.RESET_ALL}\n"
             )
-            logger.debug(f"{Fore.BLUE}{parsed_json}{Style.RESET_ALL}\n")
+            #logger.debug(f"{Fore.BLUE}{parsed_json}{Style.RESET_ALL}\n")
 
             # Validate expected keys are present
             missing_keys = [key for key in expected_keys if key not in parsed_json]
@@ -82,6 +85,7 @@ async def parse_response(
 async def send_feedback(
     agent, agent_name: str, expected_keys: List[str], previous_response: str
 ) -> Optional[Union[dict, str]]:
+    logger.info(f"Previous Response: {previous_response}")
     feedback_msg_content = format_feedback_prompt(expected_keys, previous_response)
     feedback_msg = [{"content": feedback_msg_content, "role": "user"}]
     logger.info(
@@ -578,16 +582,51 @@ async def generate_gm_response(
 
         else:
             # Validate action and handle invalid actions if necessary
+            #logger.debug("INVALIDACTION!!!!!!")
             invalid_action_response = await handle_invalid_action(
                 context, storyline, user_input, storyteller_agent, dm_agent
             )
-
+            #logger.debug("ISSUE!!!!!!")
             if invalid_action_response:
                 logger.info(
                     f"{Fore.GREEN}[INVALID RESPONSE] Returning: {invalid_action_response}\n{Style.RESET_ALL}"
                 )
+                #logger.debug("INVALIDACTIONREPONSE!!!!!")
+                # New code to call LLM-based skill suggestion function
+                skill_suggestion = await get_llm_skill_check_suggestion(
+                    user_input, context, storyteller_agent
+                )
 
-                return {"response": invalid_action_response}
+
+                #logger.info(f"{current_character}")
+                # If a skill suggestion is provided, return it as the response
+                if skill_suggestion:
+                    d20_roll = random.randint(1,20)
+                    modifier = get_skill_modifier(current_character, skill_suggestion)
+                    total = d20_roll + modifier
+                    #logger.debug(f"Rolled total: {total}")
+                    success_threshold = 12
+                    #logger.debug(f"Current success threshold: {success_threshold}")
+                    success = total >= success_threshold
+                    feedback = await generate_roll_feedback(context, user_input, skill_suggestion, total, success, storyteller_agent)
+                    #logger.debug(f"Generated feedback: {feedback}")
+                    response_text = (
+                        f"({skill_suggestion}, Roll: {d20_roll} + Modifier: {modifier} = Total: {total})."
+                        f"{feedback} "
+                    )
+                    new_order = len(conversation_pairs) + 1
+                    save_conversation_pair(
+                        db,
+                        saved_game_id,
+                        new_order,
+                        user_input,
+                        response_text
+                    )
+                    return {"response": response_text}
+                else:
+                    logger.info(f"No skill suggestion provided, returning invalid action response.")
+                    # Return the default invalid response if no skill suggestion is found
+                    return {"response": invalid_action_response}
 
             # Continue the campaign response
             dm_response_text = await continue_campaign_response(
@@ -662,3 +701,93 @@ async def generate_gm_response(
         logger.error(f"{Fore.RED}[ERROR GENERATING GM RESPONSE] {e}\n{Style.RESET_ALL}")
         logger.error(traceback.format_exc())
         return {"response": "Error generating GM response."}
+
+async def get_llm_skill_check_suggestion(user_input: str, context: dict, agent) -> Optional[str]:
+    # Prepare the conversation history for the agent
+    messages = [
+        {
+            "role": "system",
+            "content": """
+            You are a game master for a role-playing game. Your task is to recommend a skill check based on a player's action 
+            and their character's abilities. Suggest an appropriate skill check from the following options: 
+            Athletics, Acrobatics, Sleight of Hand, Stealth, Arcana, History, Investigation, Nature, Religion, 
+            Animal Handling, Insight, Medicine, Perception, Survival, Deception, Intimidation, Performance, Persuasion.
+
+            Respond with the **exact name** of the recommended skill (e.g., "Perception" or "Sleight of Hand"). 
+            If none of these skills apply, respond with "None". Do not include any additional text.
+            """
+        },
+        {
+            "role": "user",
+            "content": f"""
+            Player Action: {user_input}
+            Character Abilities and Proficiencies: {context}
+            """
+        },
+    ]
+
+    try:
+        # Request response from agent
+        response = agent.generate_reply(messages=messages)
+        
+        # Log to confirm type of response
+        logger.info(f"[LLM RESPONSE] Full response from agent: {response}")
+        # Ensure response is processed as a dictionary if JSON-like structure is expected
+        if isinstance(response, str):
+            recommended_skill = response.strip()  # Wrap string in dict if it’s plain text
+        elif isinstance(response, dict):
+            recommended_skill = response.get("response", "").strip()
+        else:
+            logger.warning(f"Unexpected response type: {type(response)}")
+        
+        valid_skills = {
+            "Athletics", "Acrobatics", "Sleight of Hand", "Stealth", "Arcana",
+            "History", "Investigation", "Nature", "Religion", "Animal Handling",
+            "Insight", "Medicine", "Perception", "Survival", "Deception",
+            "Intimidation", "Performance", "Persuasion"
+        }
+        
+        if recommended_skill in valid_skills:
+            return recommended_skill
+        else:
+            return None
+
+    except Exception as e:
+        logger.error(f"Error generating LLM skill check suggestion: {e}")
+        return None
+
+async def generate_roll_feedback(context, user_input, skill, total_roll, success, storyteller_agent):
+    """
+    Generate feedback for a roll, considering the result and success or failure.
+    """
+    prompt = [
+        {
+            "role": "system",
+            "content": """
+            You are a game master for a role-playing game. Generate narrative text based on the result of a skill check.
+            Consider the player's input, the skill used, the roll total, and whether the result is a success or failure.
+            """
+        },
+        {
+            "role": "user",
+            "content": f"""
+            Player Action: {user_input}
+            Skill Check: {skill}
+            Roll Total: {total_roll}
+            Success: {success}
+            Context: {context}
+            """
+        },
+    ]
+
+    logger.debug(f"attempting to generate response to invalid action roll")
+    response = storyteller_agent.generate_reply(messages=prompt)
+
+    if isinstance(response, str):
+        feedback = response.strip()
+    elif isinstance(response, dict):
+        feedback = response.get("response", "").strip()
+    else:
+        logger.warning(f"Unexpected response type: {type(response)}")
+
+    return feedback
