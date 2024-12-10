@@ -788,6 +788,9 @@ async def generate_roll_feedback(
             "content": """
             You are a game master for a role-playing game. Generate narrative text based on the result of a skill check.
             Consider the player's input, the skill used, the roll total, and whether the result is a success or failure.
+            
+            Consider the scene and current context when responding to the user. Ensure the response is appropriate 
+            for the action and consequences.
             """,
         },
         {
