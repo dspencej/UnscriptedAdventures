@@ -20,6 +20,8 @@ For detailed instructions, see the [Getting Started Guide](https://github.com/ds
 
 ### Installation
 
+Note: Requires Python >=3.12.0
+
 1. **Clone the Repository:**
 
    ```bash
